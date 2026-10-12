@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"lazyrun/assets"
@@ -40,26 +39,50 @@ func Run(a fyne.App, version string) {
 
 // build menyiapkan window utama tanpa menampilkannya (dipakai Run dan tes headless).
 func build(a fyne.App, version string) (*app, error) {
+	a.Settings().SetTheme(brand{theme.DefaultTheme()})
+
 	ui := &app{version: version}
 	a.SetIcon(fyne.NewStaticResource("lazyrun.png", assets.Icon))
 
 	ui.browsers = browser.Detect()
 	ui.rows = container.NewVBox()
 	ui.win = a.NewWindow(T("app_title"))
-	ui.win.Resize(fyne.NewSize(760, 540))
-
-	top := container.NewHBox(
-		widget.NewButton(T("btn_executable"), ui.showExecutableDialog),
-		widget.NewButton(T("btn_webapp"), ui.showWebAppDialog),
-	)
-	bottom := container.NewBorder(nil, nil,
-		widget.NewButton(T("check_updates"), ui.checkUpdates),
-		widget.NewLabel("v"+version))
-	body := container.NewBorder(heading(T("installed")), nil, nil, nil, container.NewVScroll(ui.rows))
-	ui.win.SetContent(container.NewBorder(top, bottom, nil, nil, body))
+	ui.win.Resize(fyne.NewSize(840, 600))
 
 	st, err := store.Load(xdg.MetadataPath())
 	ui.store = st
+
+	addExec := widget.NewButtonWithIcon(T("btn_executable"), theme.ContentAddIcon(), ui.showExecutableDialog)
+	addExec.Importance = widget.HighImportance
+	addWeb := widget.NewButtonWithIcon(T("btn_webapp"), theme.ContentAddIcon(), ui.showWebAppDialog)
+
+	leftHeader := container.NewHBox(logoImage(40), container.NewVBox(
+		heading("LazyRun"),
+		caption(T("tagline")),
+	))
+	rightHeader := container.NewHBox(addExec, addWeb)
+	header := container.NewBorder(nil, nil, leftHeader, rightHeader)
+
+	update := widget.NewButtonWithIcon(T("check_updates"), theme.DownloadIcon(), ui.checkUpdates)
+	footer := container.NewBorder(
+		widget.NewSeparator(), nil,
+		update,
+		caption("v"+version),
+	)
+
+	top := container.NewVBox(header, widget.NewSeparator(), sectionLabel(T("installed")))
+	body := container.NewBorder(
+		top,
+		nil, nil, nil,
+		container.NewVScroll(ui.rows))
+
+	content := container.NewBorder(
+		nil,
+		container.NewPadded(footer),
+		nil, nil,
+		container.NewPadded(body),
+	)
+	ui.win.SetContent(content)
 	ui.reload()
 	return ui, err
 }
@@ -70,7 +93,7 @@ func (ui *app) reload() {
 	}
 	ui.rows.RemoveAll()
 	if len(ui.store.Items) == 0 {
-		ui.rows.Add(widget.NewLabel(T("empty")))
+		ui.rows.Add(emptyState())
 	}
 	for _, sc := range ui.store.Items {
 		ui.rows.Add(ui.row(sc))
@@ -78,40 +101,66 @@ func (ui *app) reload() {
 }
 
 func (ui *app) row(sc store.Shortcut) fyne.CanvasObject {
-	title := widget.NewLabelWithStyle(sc.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-	info := widget.NewLabel(describe(sc))
+	info := container.NewVBox(
+		subheading(sc.Name),
+		caption(metaText(sc)),
+	)
 
-	open := widget.NewButton(T("folder"), func() {
+	chips := make([]fyne.CanvasObject, 0, 3)
+	if sc.Targets.Menu {
+		chips = append(chips, chip(T("chip_menu"), colorNameChipMenu))
+	}
+	if sc.Targets.Desktop {
+		chips = append(chips, chip(T("chip_desktop"), colorNameChipDesk))
+	}
+	if sc.Broken() {
+		chips = append(chips, chip(T("chip_broken"), colorNameChipBroken))
+	}
+
+	actions := container.NewHBox(chips...)
+	actions.Add(iconButton(theme.FolderOpenIcon(), func() {
 		if err := exec.Command("xdg-open", filepath.Dir(sc.DesktopPath)).Start(); err != nil {
 			dialog.ShowError(err, ui.win)
 		}
-	})
-	remove := widget.NewButton(T("delete"), func() { ui.confirmDelete(sc) })
+	}))
+	actions.Add(iconButton(theme.DeleteIcon(), func() { ui.confirmDelete(sc) }))
 
-	return container.NewBorder(nil, widget.NewSeparator(), nil,
-		container.NewHBox(open, remove),
-		container.NewVBox(title, info))
+	return container.NewVBox(
+		card(container.NewBorder(nil, nil,
+			container.NewHBox(thumb(sc.IconPath, fallbackIcon(sc)), info),
+			actions)),
+	)
 }
 
-func describe(sc store.Shortcut) string {
-	targets := make([]string, 0, 2)
-	if sc.Targets.Menu {
-		targets = append(targets, T("check_menu"))
-	}
-	if sc.Targets.Desktop {
-		targets = append(targets, T("check_desktop"))
-	}
-	loc := strings.Join(targets, " + ")
-
-	kind := "Executable"
+// metaText menampilkan tipe shortcut dan penanda singkatnya.
+func metaText(sc store.Shortcut) string {
 	if sc.Type == store.TypeWebApp {
-		kind = "Web"
+		if host := hostOf(sc.URL); host != "" {
+			return "Web · " + host
+		}
+		return "Web"
 	}
-	line := kind + " · " + loc
-	if sc.Broken() {
-		line += " · " + T("broken")
+	if sc.BinaryPath != "" {
+		return "Executable · " + filepath.Base(sc.BinaryPath)
 	}
-	return line
+	return "Executable"
+}
+
+func fallbackIcon(sc store.Shortcut) fyne.Resource {
+	if sc.Type == store.TypeWebApp {
+		return theme.ComputerIcon()
+	}
+	return theme.FileApplicationIcon()
+}
+
+func emptyState() fyne.CanvasObject {
+	hint := muted(T("empty_hint"))
+	hint.Alignment = fyne.TextAlignCenter
+	return container.NewCenter(container.NewVBox(
+		container.NewCenter(logoImage(88)),
+		subheading(T("empty_title")),
+		hint,
+	))
 }
 
 func (ui *app) confirmDelete(sc store.Shortcut) {
@@ -173,8 +222,7 @@ func (ui *app) added(sc store.Shortcut, err error, closeDialog func()) {
 	dialog.ShowInformation(T("success_title"), fmt.Sprintf(T("success_msg"), sc.Name), ui.win)
 }
 
-func heading(text string) *widget.Label {
-	return widget.NewLabelWithStyle(text, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+// sectionTitle adalah judul bagian di dalam dialog.
+func sectionTitle(text string) fyne.CanvasObject {
+	return container.NewVBox(sectionLabel(text), widget.NewSeparator())
 }
-
-func spacer() fyne.CanvasObject { return layout.NewSpacer() }

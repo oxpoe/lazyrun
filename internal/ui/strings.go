@@ -8,10 +8,15 @@ import (
 // tr menyimpan teks UI: index 0 = Inggris, 1 = Indonesia.
 var tr = map[string][2]string{
 	"app_title":      {"LazyRun — lazy shortcut build", "LazyRun — lazy shortcut build"},
-	"btn_executable": {"+ Executable", "+ Executable"},
-	"btn_webapp":     {"+ Web App", "+ Aplikasi Web"},
+	"tagline":        {"lazy shortcut build", "lazy shortcut build"},
+	"btn_executable": {"Executable", "Executable"},
+	"btn_webapp":     {"Web App", "Aplikasi Web"},
 	"installed":      {"Installed shortcuts", "Shortcut terinstall"},
-	"empty":          {"No shortcuts yet. Add one with the buttons above.", "Belum ada shortcut. Tambahkan lewat tombol di atas."},
+	"empty_title":    {"Nothing here yet", "Belum ada apa-apa"},
+	"empty_hint":     {"Create your first shortcut with the buttons in the corner.", "Buat shortcut pertamamu lewat tombol di pojok kanan atas."},
+	"chip_menu":      {"Menu", "Menu"},
+	"chip_desktop":   {"Desktop", "Desktop"},
+	"chip_broken":    {"file missing", "file hilang"},
 	"none":           {"not selected", "belum dipilih"},
 	"icon_auto":      {"automatic", "otomatis"},
 	"browse":         {"Browse...", "Pilih..."},
@@ -33,6 +38,8 @@ var tr = map[string][2]string{
 	"section_location": {"Shortcut location", "Lokasi shortcut"},
 	"check_menu":       {"Application menu", "Menu aplikasi"},
 	"check_desktop":    {"Desktop", "Desktop"},
+	"exec_hint":        {"The binary is copied to ~/.local/bin and can be uninstalled from the list.", "Binary disalin ke ~/.local/bin dan bisa dihapus lagi dari daftar."},
+	"web_hint":         {"The icon is fetched from the site's favicon if you leave it empty.", "Ikon diambil otomatis dari favicon situs kalau dibiarkan kosong."},
 
 	"confirm_delete_title": {"Uninstall shortcut", "Hapus shortcut"},
 	"confirm_delete_msg":   {"Remove %s?", "Hapus %s?"},
@@ -47,7 +54,6 @@ var tr = map[string][2]string{
 	"need_url":    {"Enter a URL first.", "Masukkan URL dulu."},
 	"need_target": {"Pick at least one location: menu or desktop.", "Pilih minimal satu lokasi: menu atau desktop."},
 	"no_browser":  {"No supported browser found. Install Chrome, Chromium, Brave, Edge, Vivaldi, or Firefox first.", "Browser yang didukung tidak ditemukan. Install Chrome, Chromium, Brave, Edge, Vivaldi, atau Firefox dulu."},
-	"broken":      {"missing", "hilang"},
 
 	"check_updates":     {"Check for Updates", "Cek Update"},
 	"not_appimage":      {"This build is not an AppImage (version %s). Update from where you got it.", "Build ini bukan AppImage (versi %s). Update dari sumber kamu mendapatkannya."},

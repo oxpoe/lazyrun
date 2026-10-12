@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"lazyrun/internal/browser"
@@ -27,7 +28,8 @@ func (ui *app) showWebAppDialog() {
 	urlEntry := widget.NewEntry()
 	urlEntry.SetPlaceHolder("https://web.whatsapp.com")
 	nameEntry := widget.NewEntry()
-	iconLabel := widget.NewLabel(T("icon_auto"))
+	nameEntry.SetPlaceHolder("WhatsApp Web")
+	iconLabel := muted(T("icon_auto"))
 	picker := widget.NewSelect(browserNames(ui.browsers), nil)
 	picker.SetSelected(ui.browsers[0].Name)
 	menu := widget.NewCheck(T("check_menu"), nil)
@@ -51,7 +53,7 @@ func (ui *app) showWebAppDialog() {
 		}
 	}
 
-	browseIcon := widget.NewButton(T("browse"), func() {
+	browseIcon := widget.NewButtonWithIcon(T("browse"), theme.FolderOpenIcon(), func() {
 		pickFile(ui.win, imageFilter, func(path string) {
 			iconPath = path
 			iconLabel.SetText(filepath.Base(path))
@@ -59,7 +61,7 @@ func (ui *app) showWebAppDialog() {
 	})
 
 	var d *dialog.CustomDialog
-	install := widget.NewButton(T("install"), func() {
+	install := widget.NewButtonWithIcon(T("install"), theme.DownloadIcon(), func() {
 		switch {
 		case strings.TrimSpace(urlEntry.Text) == "":
 			dialog.ShowInformation(T("err_title"), T("need_url"), ui.win)
@@ -96,14 +98,17 @@ func (ui *app) showWebAppDialog() {
 	content := container.NewVBox(
 		form,
 		widget.NewSeparator(),
-		heading(T("section_location")),
+		sectionTitle(T("section_location")),
 		menu,
 		desktop,
-		container.NewHBox(spacer(), widget.NewButton(T("cancel"), func() { d.Hide() }), install),
+		muted(T("web_hint")),
+		container.NewHBox(spacer(),
+			widget.NewButton(T("cancel"), func() { d.Hide() }),
+			install),
 	)
 
 	d = dialog.NewCustom(T("new_web_title"), "", content, ui.win)
-	d.Resize(fyne.NewSize(520, 440))
+	d.Resize(fyne.NewSize(560, 470))
 	d.Show()
 }
 

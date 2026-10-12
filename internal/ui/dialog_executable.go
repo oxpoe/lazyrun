@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/storage"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"lazyrun/internal/shortcut"
@@ -27,9 +28,10 @@ var (
 func (ui *app) showExecutableDialog() {
 	var binPath, iconPath string
 
-	binLabel := widget.NewLabel(T("none"))
-	iconLabel := widget.NewLabel(T("icon_auto"))
+	binLabel := muted(T("none"))
+	iconLabel := muted(T("icon_auto"))
 	nameEntry := widget.NewEntry()
+	nameEntry.SetPlaceHolder("Winbox")
 	category := widget.NewSelect(categories, nil)
 	category.SetSelected("Utility")
 	menu := widget.NewCheck(T("check_menu"), nil)
@@ -37,7 +39,7 @@ func (ui *app) showExecutableDialog() {
 	desktop := widget.NewCheck(T("check_desktop"), nil)
 	desktop.SetChecked(true)
 
-	browseBin := widget.NewButton(T("browse"), func() {
+	browseBin := widget.NewButtonWithIcon(T("browse"), theme.FolderOpenIcon(), func() {
 		pickFile(ui.win, nil, func(path string) {
 			binPath = path
 			binLabel.SetText(filepath.Base(path))
@@ -46,7 +48,7 @@ func (ui *app) showExecutableDialog() {
 			}
 		})
 	})
-	browseIcon := widget.NewButton(T("browse"), func() {
+	browseIcon := widget.NewButtonWithIcon(T("browse"), theme.FolderOpenIcon(), func() {
 		pickFile(ui.win, imageFilter, func(path string) {
 			iconPath = path
 			iconLabel.SetText(filepath.Base(path))
@@ -54,7 +56,7 @@ func (ui *app) showExecutableDialog() {
 	})
 
 	var d *dialog.CustomDialog
-	install := widget.NewButton(T("install"), func() {
+	install := widget.NewButtonWithIcon(T("install"), theme.DownloadIcon(), func() {
 		switch {
 		case binPath == "":
 			dialog.ShowInformation(T("err_title"), T("need_binary"), ui.win)
@@ -90,14 +92,17 @@ func (ui *app) showExecutableDialog() {
 	content := container.NewVBox(
 		form,
 		widget.NewSeparator(),
-		heading(T("section_location")),
+		sectionTitle(T("section_location")),
 		menu,
 		desktop,
-		container.NewHBox(spacer(), widget.NewButton(T("cancel"), func() { d.Hide() }), install),
+		muted(T("exec_hint")),
+		container.NewHBox(spacer(),
+			widget.NewButton(T("cancel"), func() { d.Hide() }),
+			install),
 	)
 
 	d = dialog.NewCustom(T("new_exec_title"), "", content, ui.win)
-	d.Resize(fyne.NewSize(520, 460))
+	d.Resize(fyne.NewSize(560, 470))
 	d.Show()
 }
 

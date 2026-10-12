@@ -26,10 +26,13 @@ func TestBuildMainWindow(t *testing.T) {
 	ui.checkUpdates()
 }
 
-func TestDescribe(t *testing.T) {
-	sc := store.Shortcut{Type: store.TypeWebApp, Targets: store.Targets{Menu: true}, DesktopPath: "/nonexistent/x.desktop"}
-	got := describe(sc)
-	if got != "Web · Application menu · missing" && got != "Web · Menu aplikasi · hilang" {
-		t.Errorf("describe() = %q", got)
+func TestMetaText(t *testing.T) {
+	sc := store.Shortcut{Type: store.TypeWebApp, URL: "https://example.com/x", Targets: store.Targets{Menu: true}}
+	if got := metaText(sc); got != "Web · example.com" {
+		t.Errorf("metaText() = %q", got)
+	}
+	exe := store.Shortcut{Type: store.TypeExecutable, BinaryPath: "/home/u/.local/bin/winbox"}
+	if got := metaText(exe); got != "Executable · winbox" {
+		t.Errorf("metaText() = %q", got)
 	}
 }
