@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=LazyRun
+GenericName=Shortcut Maker
+Comment=lazy shortcut build
+Exec=lazyrun
+Icon=lazyrun
+Terminal=false
+Categories=Utility;
+Keywords=shortcut;desktop;pwa;appimage;
+StartupNotify=false
