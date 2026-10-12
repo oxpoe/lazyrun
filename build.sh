@@ -47,6 +47,8 @@ else
 fi
 
 echo "==> bundle + package AppImage"
+# hapus output lama dulu: file yang sedang dijalankan tidak bisa ditimpa langsung
+rm -f "$OUT"/lazyrun-*.AppImage "$OUT"/lazyrun-*.AppImage.zsync
 "$TOOLS/linuxdeploy" --appimage-extract-and-run \
 	--appdir "$APPDIR" \
 	--desktop-file "$APPDIR/lazyrun.desktop" \
