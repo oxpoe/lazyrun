@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -26,6 +27,7 @@ type app struct {
 	store    *store.Store
 	browsers []browser.Browser
 	rows     *fyne.Container
+	cards    map[string]*hoverCard
 	count    *canvas.Text // angka jumlah shortcut di header daftar
 	version  string
 }
@@ -34,6 +36,7 @@ type app struct {
 func Run(a fyne.App, version string) {
 	ui, loadErr := build(a, version)
 	ui.win.Show()
+	ui.flashCards()
 	if loadErr != nil {
 		dialog.ShowError(loadErr, ui.win)
 	}
@@ -61,7 +64,7 @@ func build(a fyne.App, version string) (*app, error) {
 	addExec.Importance = widget.HighImportance
 	addWeb := widget.NewButtonWithIcon(T("btn_webapp"), theme.ContentAddIcon(), ui.showWebAppDialog)
 
-	leftHeader := container.NewHBox(logoImage(40), container.NewVBox(
+	leftHeader := container.NewHBox(logoBox(newLogo(), 40), container.NewVBox(
 		heading("LazyRun"),
 		caption(T("tagline")),
 	))
@@ -75,10 +78,12 @@ func build(a fyne.App, version string) (*app, error) {
 	footer := container.NewBorder(
 		widget.NewSeparator(), nil,
 		container.NewHBox(update, github, donate),
-		caption("v"+version),
+		caption("LazyRun v"+version+" · oxpoe"),
 	)
 
-	top := container.NewVBox(header, accentBar(),
+	accent := accentBar()
+	pulseGradient(accent)
+	top := container.NewVBox(header, accent,
 		container.NewHBox(sectionLabel(T("installed")), countChip))
 	body := container.NewBorder(
 		top,
@@ -106,12 +111,15 @@ func (ui *app) reload() {
 	if len(ui.store.Items) == 0 {
 		ui.rows.Add(emptyState())
 	}
+	ui.cards = map[string]*hoverCard{}
 	for _, sc := range ui.store.Items {
-		ui.rows.Add(ui.row(sc))
+		row := ui.row(sc)
+		ui.rows.Add(row)
+		ui.cards[sc.Slug] = row
 	}
 }
 
-func (ui *app) row(sc store.Shortcut) fyne.CanvasObject {
+func (ui *app) row(sc store.Shortcut) *hoverCard {
 	info := container.NewVBox(
 		subheading(sc.Name),
 		caption(metaText(sc)),
@@ -137,11 +145,9 @@ func (ui *app) row(sc store.Shortcut) fyne.CanvasObject {
 	}))
 	actions.Add(iconButton(theme.DeleteIcon(), func() { ui.confirmDelete(sc) }))
 
-	return container.NewVBox(
-		card(container.NewBorder(nil, nil,
-			container.NewHBox(thumb(sc.IconPath, fallbackIcon(sc)), info),
-			actions)),
-	)
+	return newHoverCard(container.NewBorder(nil, nil,
+		container.NewHBox(thumb(sc.IconPath, fallbackIcon(sc)), info),
+		actions))
 }
 
 // metaText menampilkan tipe shortcut dan penanda singkatnya.
@@ -169,10 +175,21 @@ func emptyState() fyne.CanvasObject {
 	hint := muted(T("empty_hint"))
 	hint.Alignment = fyne.TextAlignCenter
 	return container.NewCenter(container.NewVBox(
-		container.NewCenter(logoImage(88)),
+		container.NewCenter(logoBox(newLogo(), 88)),
 		subheading(T("empty_title")),
 		hint,
 	))
+}
+
+// flashCards memberi kilatan berurutan saat daftar dimuat/diubah.
+func (ui *app) flashCards() {
+	for i, sc := range ui.store.Items {
+		card, ok := ui.cards[sc.Slug]
+		if !ok {
+			continue
+		}
+		card.flash(time.Duration(min(i, 6)) * 70 * time.Millisecond)
+	}
 }
 
 func (ui *app) confirmDelete(sc store.Shortcut) {
@@ -231,6 +248,9 @@ func (ui *app) added(sc store.Shortcut, err error, closeDialog func()) {
 	}
 	closeDialog()
 	ui.reload()
+	if card, ok := ui.cards[sc.Slug]; ok {
+		card.flash(0)
+	}
 	dialog.ShowInformation(T("success_title"), fmt.Sprintf(T("success_msg"), sc.Name), ui.win)
 }
 

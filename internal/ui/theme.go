@@ -16,6 +16,7 @@ var (
 // Nama warna tambahan di luar tema standar Fyne.
 const (
 	colorNameCard       fyne.ThemeColorName = "lazyrunCard"
+	colorNameCardHover  fyne.ThemeColorName = "lazyrunCardHover"
 	colorNameMuted      fyne.ThemeColorName = "lazyrunMuted"
 	colorNameChipMenu   fyne.ThemeColorName = "lazyrunChipMenu"
 	colorNameChipDesk   fyne.ThemeColorName = "lazyrunChipDesktop"
@@ -34,6 +35,8 @@ func (b brand) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.
 		return pick(dark, color.NRGBA{R: 0x13, G: 0x13, B: 0x1B, A: 0xFF}, color.NRGBA{R: 0xF5, G: 0xF5, B: 0xFA, A: 0xFF})
 	case colorNameCard:
 		return pick(dark, color.NRGBA{R: 0x1D, G: 0x1D, B: 0x28, A: 0xFF}, color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF})
+	case colorNameCardHover:
+		return withAlpha(brandIndigo, pick[uint8](dark, 0x2E, 0x14))
 	case theme.ColorNameInputBackground:
 		return pick(dark, color.NRGBA{R: 0x1A, G: 0x1A, B: 0x24, A: 0xFF}, color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF})
 	case theme.ColorNameButton, theme.ColorNameMenuBackground:

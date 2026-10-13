@@ -76,7 +76,7 @@ func chipLabel(text string, bg fyne.ThemeColorName) (fyne.CanvasObject, *canvas.
 }
 
 // accentBar adalah garis gradien brand di bawah header.
-func accentBar() fyne.CanvasObject {
+func accentBar() *canvas.LinearGradient {
 	bar := canvas.NewLinearGradient(brandIndigo, brandCyan, 90)
 	bar.SetMinSize(fyne.NewSize(0, 3))
 	return bar
@@ -101,15 +101,20 @@ func thumb(path string, fallback fyne.Resource) fyne.CanvasObject {
 		image = canvas.NewImageFromResource(theme.NewThemedResource(fallback))
 	}
 	image.FillMode = canvas.ImageFillContain
+	image.CornerRadius = 8
 	image.SetMinSize(fyne.NewSize(36, 36))
 	return container.NewGridWrap(fyne.NewSize(36, 36), image)
 }
 
-// logoImage menampilkan ikon LazyRun pada ukuran tertentu.
-func logoImage(size float32) fyne.CanvasObject {
+// newLogo mengembalikan ikon LazyRun (dipakai untuk keperluan animasi).
+func newLogo() *canvas.Image {
 	image := canvas.NewImageFromResource(fyne.NewStaticResource("lazyrun.png", assets.Icon))
 	image.FillMode = canvas.ImageFillContain
-	image.SetMinSize(fyne.NewSize(size, size))
+	return image
+}
+
+// logoBox menampilkan ikon LazyRun pada ukuran tetap.
+func logoBox(image *canvas.Image, size float32) fyne.CanvasObject {
 	return container.NewGridWrap(fyne.NewSize(size, size), image)
 }
 

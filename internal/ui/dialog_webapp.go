@@ -102,7 +102,7 @@ func (ui *app) showWebAppDialog() {
 		menu,
 		desktop,
 		muted(T("web_hint")),
-		container.NewHBox(spacer(),
+		container.NewHBox(logoBox(newLogo(), 20), spacer(),
 			widget.NewButton(T("cancel"), func() { d.Hide() }),
 			install),
 	)

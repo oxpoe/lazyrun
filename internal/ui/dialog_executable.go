@@ -96,7 +96,7 @@ func (ui *app) showExecutableDialog() {
 		menu,
 		desktop,
 		muted(T("exec_hint")),
-		container.NewHBox(spacer(),
+		container.NewHBox(logoBox(newLogo(), 20), spacer(),
 			widget.NewButton(T("cancel"), func() { d.Hide() }),
 			install),
 	)
