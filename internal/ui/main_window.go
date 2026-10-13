@@ -39,6 +39,7 @@ func Run(a fyne.App, version string) {
 	ui, loadErr := build(a, version)
 	ui.win.Show()
 	ui.flashCards()
+	ui.scheduleUpdateCheck()
 	if loadErr != nil {
 		dialog.ShowError(loadErr, ui.win)
 	}
