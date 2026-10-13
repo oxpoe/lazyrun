@@ -30,8 +30,8 @@ var tr = map[string][2]string{
 	"browse":            {"Browse...", "Pilih..."},
 	"install":           {"Install", "Install"},
 	"cancel":            {"Cancel", "Batal"},
+	"back":              {"Back", "Kembali"},
 	"delete":            {"Delete", "Hapus"},
-	"folder":            {"Folder", "Folder"},
 	"working":           {"Working...", "Sedang diproses..."},
 
 	"new_exec_title": {"New Executable Shortcut", "Shortcut Executable Baru"},
@@ -63,11 +63,20 @@ var tr = map[string][2]string{
 	"need_target": {"Pick at least one location: menu or desktop.", "Pilih minimal satu lokasi: menu atau desktop."},
 	"no_browser":  {"No supported browser found. Install Chrome, Chromium, Brave, Edge, Vivaldi, or Firefox first.", "Browser yang didukung tidak ditemukan. Install Chrome, Chromium, Brave, Edge, Vivaldi, atau Firefox dulu."},
 
-	"github":            {"GitHub", "GitHub"},
-	"donate":            {"Donate", "Donasi"},
-	"check_updates":     {"Check for Updates", "Cek Update"},
-	"not_appimage":      {"This build is not an AppImage (version %s). Update from where you got it.", "Build ini bukan AppImage (versi %s). Update dari sumber kamu mendapatkannya."},
-	"no_appimageupdate": {"AppImageUpdate is not installed. Install it to update LazyRun automatically.", "AppImageUpdate tidak terpasang. Install dulu supaya LazyRun bisa update otomatis."},
+	"github":        {"GitHub", "GitHub"},
+	"donate":        {"Donate", "Donasi"},
+	"check_updates": {"Check for Updates", "Cek Update"},
+
+	"update_available":   {"LazyRun %s is available (you are on %s).", "LazyRun %s sudah tersedia (kamu pakai %s)."},
+	"update_hint":        {"The new AppImage is downloaded and swapped in; restart afterwards to use it.", "AppImage baru diunduh lalu ditukar; restart setelahnya untuk memakainya."},
+	"update_now":         {"Update now", "Update sekarang"},
+	"update_later":       {"Later", "Nanti"},
+	"update_page":        {"Release page", "Halaman rilis"},
+	"update_downloading": {"Downloading update...", "Mengunduh update..."},
+	"update_installed":   {"Update installed. Restart LazyRun to use the new version.", "Update terpasang. Restart LazyRun untuk memakai versi baru."},
+	"update_restart":     {"Restart now", "Restart sekarang"},
+	"up_to_date":         {"LazyRun %s is the latest version.", "LazyRun %s adalah versi terbaru."},
+	"dev_build":          {"This is a development build (%s), update check is skipped.", "Ini build development (%s), cek update dilewati."},
 }
 
 var lang = detectLang()

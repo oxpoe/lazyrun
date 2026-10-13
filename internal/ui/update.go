@@ -59,11 +59,10 @@ func (ui *app) showUpdateDialog(rel update.Release) {
 	notes.Wrapping = fyne.TextWrapWord
 	notes.Importance = widget.LowImportance
 
-	body := container.NewVScroll(container.NewVBox(
-		heading(fmt.Sprintf(T("update_available"), rel.Version, ui.version)),
-		muted(T("update_hint")),
-		notes,
-	))
+	// catatan rilis di tengah (bukan top): VScroll di Fyne punya MinSize kecil,
+	// jadi kalau dipasang sebagai top dari Border isinya terpotong.
+	head := heading(fmt.Sprintf(T("update_available"), rel.Version, ui.version))
+	body := container.NewVScroll(container.NewVBox(muted(T("update_hint")), notes))
 
 	var d *dialog.CustomDialog
 	buttons := container.NewHBox(
@@ -86,7 +85,7 @@ func (ui *app) showUpdateDialog(rel update.Release) {
 		}))
 	}
 
-	d = dialog.NewCustomWithoutButtons(T("check_updates"), container.NewBorder(body, buttons, nil, nil), ui.win)
+	d = dialog.NewCustomWithoutButtons(T("check_updates"), container.NewBorder(head, buttons, nil, nil, body), ui.win)
 	showDialog(d, ui.win, 560, 440)
 }
 

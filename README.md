@@ -69,6 +69,23 @@ Everything stays inside the home directory — no root, no system directories.
 Filenames use a slug of the app name (`WhatsApp Web` → `whatsapp-web.desktop`);
 the `Name=` field keeps the name you typed.
 
+## Updates
+
+LazyRun checks the **latest release** of this repository once, a few seconds after
+start (only when running as an AppImage) and offers to install it:
+
+- if [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) is in
+  `$PATH` it is used, so only the changed blocks are downloaded (zsync);
+- otherwise the AppImage is downloaded, verified (ELF + AppImage magic bytes) and
+  swapped in atomically — if anything fails the current AppImage stays untouched;
+- *Restart now* in the dialog runs the new version.
+
+*Check for Updates* in the footer runs the same flow manually.
+
+**Publishing a release** so updates reach users: tag it `vX.Y.Z`, upload
+`lazyrun-X.Y.Z-x86_64.AppImage` plus the `.zsync` file produced by `build.sh` as
+release assets, and mark it as the latest release.
+
 ## Build
 
 Requirements: Go 1.24+, cgo, and X11/OpenGL development headers (Fyne).
