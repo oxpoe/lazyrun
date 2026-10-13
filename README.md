@@ -20,6 +20,11 @@ breathes while the app is open (the koala in `assets/logo.svg` is the mascot).*
   <img src="docs/dialog-icons.png" width="49%" alt="Icon search dialog">
 </p>
 
+<p align="center">
+  <img src="docs/dialog-loading.png" width="49%" alt="Progress bar while installing">
+  <img src="docs/main-light.png" width="49%" alt="LazyRun in light theme">
+</p>
+
 - **Repo:** <https://github.com/oxpoe/lazyrun>
 - **Donate:** <https://donasi.oxpoe.qzz.io/>
 
