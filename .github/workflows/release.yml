@@ -1,0 +1,51 @@
+name: Release
+
+# Tinggal bikin tag: git tag v1.2.0 && git push --tags
+# Versi AppImage diambil dari nama tag, jadi tidak perlu ubah file apa pun.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libx11-dev xorg-dev libxkbcommon-dev libwayland-dev
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build AppImage
+        env:
+          # GH_USER/GH_REPO dipakai build.sh untuk menyisipkan info update zsync
+          # (gh-releases-zsync|<user>|<repo>|latest|lazyrun-*.AppImage.zsync)
+          GH_USER: ${{ github.repository_owner }}
+          GH_REPO: ${{ github.event.repository.name }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}" ./build.sh
+          ls -lh dist/lazyrun-*.AppImage*
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/lazyrun-*.AppImage \
+            dist/lazyrun-*.AppImage.zsync \
+            --title "LazyRun ${GITHUB_REF_NAME}" \
+            --generate-notes

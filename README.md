@@ -82,9 +82,20 @@ start (only when running as an AppImage) and offers to install it:
 
 *Check for Updates* in the footer runs the same flow manually.
 
-**Publishing a release** so updates reach users: tag it `vX.Y.Z`, upload
-`lazyrun-X.Y.Z-x86_64.AppImage` plus the `.zsync` file produced by `build.sh` as
-release assets, and mark it as the latest release.
+**Publishing a release** is just a tag — GitHub Actions builds and uploads
+everything (`.github/workflows/release.yml`):
+
+```bash
+git tag v1.1.0 && git push --tags
+```
+
+The workflow builds the AppImage with the version taken from the tag, runs the
+tests, and publishes a release with the `.AppImage` + `.zsync` assets and
+auto-generated notes. To build a release locally instead:
+
+```bash
+VERSION=1.1.0 GH_USER=oxpoe GH_REPO=lazyrun ./build.sh
+```
 
 ## Build
 
