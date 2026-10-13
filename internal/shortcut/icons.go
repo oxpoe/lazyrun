@@ -3,6 +3,7 @@ package shortcut
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"lazyrun/internal/icon"
@@ -29,43 +30,74 @@ type iconOptions struct {
 
 // installIconFor menentukan ikon shortcut dan sumbernya.
 // Urutan: file user → URL user → ikon di folder binary → favicon situs → cari online → ikon default.
+// Kandidat yang gagal (file rusak, unduhan gagal, SVG tidak bisa diraster) dilewati,
+// jadi install tidak pernah batal hanya karena ikon.
 func installIconFor(o iconOptions) (path, source string, err error) {
-	if o.IconPath != "" {
-		path, err = icon.Save(o.IconPath, "", "", o.Slug)
-		return path, iconSourceFile + o.IconPath, err
-	}
-	if len(o.IconData) > 0 && o.IconURL != "" {
-		if path, err := icon.SaveData(o.IconData, o.Slug); err == nil {
-			return path, o.IconURL, nil
-		}
-	}
-	if o.IconURL != "" {
-		if data, ext, err := icon.FromURL(o.IconURL); err == nil {
-			path, err := icon.SaveBytes(data, ext, o.Slug)
-			return path, o.IconURL, err
-		}
-	}
-	if nearby := icon.Nearby(o.NearbyDir, o.NearbyBase); nearby != "" {
-		path, err = icon.Save(nearby, "", "", o.Slug)
-		return path, iconSourceFile + nearby, err
-	}
-	if o.PageURL != "" {
-		if data, ext, err := icon.Fetch(o.PageURL); err == nil {
-			path, err := icon.SaveBytes(data, ext, o.Slug)
-			return path, iconSourceFavicon + o.PageURL, err
-		}
-	}
-	if o.Query != "" {
-		if result, ok := icon.Find(o.Query); ok {
-			if data, ext, err := icon.FromURL(result.URL); err == nil {
-				path, err := icon.SaveBytes(data, ext, o.Slug)
-				return path, iconSourceSearch + o.Query, err
+	attempts := []struct {
+		source string
+		load   func() ([]byte, string, error)
+	}{
+		{iconSourceFile + o.IconPath, func() ([]byte, string, error) {
+			if o.IconPath == "" {
+				return nil, "", errSkipIcon
 			}
-		}
+			data, err := os.ReadFile(o.IconPath)
+			return data, strings.ToLower(filepath.Ext(o.IconPath)), err
+		}},
+		{o.IconURL, func() ([]byte, string, error) {
+			// ikon pilihan dari pencarian online: datanya sudah diunduh UI
+			if len(o.IconData) > 0 {
+				return o.IconData, icon.Ext(o.IconData), nil
+			}
+			if o.IconURL == "" {
+				return nil, "", errSkipIcon
+			}
+			return icon.FromURL(o.IconURL)
+		}},
+		{iconSourceFile + icon.Nearby(o.NearbyDir, o.NearbyBase), func() ([]byte, string, error) {
+			nearby := icon.Nearby(o.NearbyDir, o.NearbyBase)
+			if nearby == "" {
+				return nil, "", errSkipIcon
+			}
+			data, err := os.ReadFile(nearby)
+			return data, strings.ToLower(filepath.Ext(nearby)), err
+		}},
+		{iconSourceFavicon + o.PageURL, func() ([]byte, string, error) {
+			if o.PageURL == "" {
+				return nil, "", errSkipIcon
+			}
+			return icon.Fetch(o.PageURL)
+		}},
+		{iconSourceSearch + o.Query, func() ([]byte, string, error) {
+			if o.Query == "" {
+				return nil, "", errSkipIcon
+			}
+			result, ok := icon.Find(o.Query)
+			if !ok {
+				return nil, "", errSkipIcon
+			}
+			return icon.FromURL(result.URL)
+		}},
 	}
+
+	for _, attempt := range attempts {
+		data, ext, err := attempt.load()
+		if err != nil || len(data) == 0 {
+			continue
+		}
+		path, err := icon.SaveBytes(data, ext, o.Slug)
+		if err != nil {
+			continue
+		}
+		return path, attempt.source, nil
+	}
+
 	path, err = icon.Default(o.Slug)
 	return path, "", err
 }
+
+// errSkipIcon menandai kandidat ikon yang tidak tersedia.
+var errSkipIcon = errors.New("icon source not available")
 
 // RefreshIcon mengunduh ulang ikon shortcut dari sumber online-nya (sync manual).
 func RefreshIcon(sc store.Shortcut) (string, error) {

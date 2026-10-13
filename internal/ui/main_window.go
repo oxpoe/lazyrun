@@ -29,6 +29,7 @@ type app struct {
 	browsers []browser.Browser
 	rows     *fyne.Container
 	cards    map[string]*hoverCard
+	icons    *iconCache
 	count    *canvas.Text // angka jumlah shortcut di header daftar
 	version  string
 }
@@ -52,6 +53,7 @@ func build(a fyne.App, version string) (*app, error) {
 	a.SetIcon(fyne.NewStaticResource("lazyrun.png", assets.Icon))
 
 	ui.browsers = browser.Detect()
+	ui.icons = newIconCache()
 	ui.rows = container.NewVBox()
 	countChip, count := chipLabel("0", colorNameChipMenu)
 	ui.count = count

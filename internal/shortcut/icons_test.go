@@ -1,6 +1,7 @@
 package shortcut
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -129,9 +130,10 @@ func TestInstallExecutableSearchesIconOnline(t *testing.T) {
 	if sc.IconSource != "search:Winbox" {
 		t.Errorf("icon_source = %q", sc.IconSource)
 	}
-	if filepath.Ext(sc.IconPath) != ".svg" {
-		t.Errorf("ikon online harus tersimpan sebagai .svg, dapat %s", sc.IconPath)
+	if filepath.Ext(sc.IconPath) != ".png" {
+		t.Errorf("SVG online harus diraster jadi .png, dapat %s", sc.IconPath)
 	}
+	assertPNG(t, sc.IconPath)
 }
 
 func TestInstallWebAppUsesIconURL(t *testing.T) {
@@ -164,9 +166,10 @@ func TestInstallWebAppUsesIconURL(t *testing.T) {
 	if sc.IconSource != srv.URL+"/pilih.svg" {
 		t.Errorf("ikon pilihan user harus dipakai, icon_source = %q", sc.IconSource)
 	}
-	if filepath.Ext(sc.IconPath) != ".svg" {
+	if filepath.Ext(sc.IconPath) != ".png" {
 		t.Errorf("ikon = %s", sc.IconPath)
 	}
+	assertPNG(t, sc.IconPath)
 }
 
 func TestInstallWebAppUsesIconDataFromUI(t *testing.T) {
@@ -187,8 +190,17 @@ func TestInstallWebAppUsesIconDataFromUI(t *testing.T) {
 	if sc.IconSource != "https://api.iconify.design/mdi/example.svg?height=256" {
 		t.Errorf("icon_source = %q", sc.IconSource)
 	}
-	data, err := os.ReadFile(sc.IconPath)
-	if err != nil || string(data) != string(svg) {
-		t.Errorf("ikon tersimpan salah: %v %d byte", err, len(data))
+	assertPNG(t, sc.IconPath)
+}
+
+// assertPNG memastikan file ikon berisi PNG (bukan SVG mentah).
+func assertPNG(t *testing.T, path string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ikon tidak terbaca: %v", err)
+	}
+	if !bytes.HasPrefix(data, []byte("\x89PNG\r\n\x1a\n")) {
+		t.Errorf("%s bukan PNG: %q", path, data[:min(12, len(data))])
 	}
 }

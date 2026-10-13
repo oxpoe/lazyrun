@@ -23,7 +23,7 @@ func icoWithPNG(png []byte) []byte {
 	return ico
 }
 
-var png = append([]byte("\x89PNG\r\n\x1a\n"), []byte("payload")...)
+var pngBytes = append([]byte("\x89PNG\r\n\x1a\n"), []byte("payload")...)
 
 func TestFetchUsesLinkedIcon(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -34,9 +34,9 @@ func TestFetchUsesLinkedIcon(t *testing.T) {
 				`<link rel="icon" type="image/png" sizes="192x192" href="/big.png">`+
 				`</head></html>`)
 		case "/big.png":
-			w.Write(png)
+			w.Write(pngBytes)
 		default:
-			w.Write(icoWithPNG(png))
+			w.Write(icoWithPNG(pngBytes))
 		}
 	}))
 	defer srv.Close()
@@ -45,7 +45,7 @@ func TestFetchUsesLinkedIcon(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ext != ".png" || string(data) != string(png) {
+	if ext != ".png" || string(data) != string(pngBytes) {
 		t.Errorf("ikon terpilih salah: ext=%s data=%q", ext, data)
 	}
 }
@@ -56,7 +56,7 @@ func TestFetchFallsBackToFaviconICO(t *testing.T) {
 			io.WriteString(w, `<html><head><title>no icon</title></head></html>`)
 			return
 		}
-		w.Write(icoWithPNG(png))
+		w.Write(icoWithPNG(pngBytes))
 	}))
 	defer srv.Close()
 
@@ -64,7 +64,7 @@ func TestFetchFallsBackToFaviconICO(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ext != ".png" || string(data) != string(png) {
+	if ext != ".png" || string(data) != string(pngBytes) {
 		t.Errorf("PNG di dalam .ico harus dipakai: ext=%s data=%q", ext, data)
 	}
 }
@@ -81,7 +81,7 @@ func TestFetchFailsWithoutIcon(t *testing.T) {
 }
 
 func TestLargestPNGFromICO(t *testing.T) {
-	if got := largestPNGFromICO(icoWithPNG(png)); string(got) != string(png) {
+	if got := largestPNGFromICO(icoWithPNG(pngBytes)); string(got) != string(pngBytes) {
 		t.Errorf("PNG di dalam .ico tidak terbaca: %q", got)
 	}
 	if got := largestPNGFromICO([]byte("bukan ico")); got != nil {
@@ -97,8 +97,8 @@ func TestLargestPNGFromICO(t *testing.T) {
 }
 
 func TestSniffExt(t *testing.T) {
-	if ext := sniffExt(png); ext != ".png" {
-		t.Errorf("sniffExt(png) = %s", ext)
+	if ext := sniffExt(pngBytes); ext != ".png" {
+		t.Errorf("sniffExt(pngBytes) = %s", ext)
 	}
 	if ext := sniffExt([]byte(`<?xml version="1.0"?><svg xmlns="..."><path/></svg>`)); ext != ".svg" {
 		t.Errorf("sniffExt(svg) = %s", ext)

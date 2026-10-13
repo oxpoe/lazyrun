@@ -73,9 +73,18 @@ func fromFile(src, slug string) (string, error) {
 }
 
 // SaveBytes menulis data ikon ke direktori ikon XDG.
+// SVG diraster dulu ke PNG: sebagian ikon internet memakai fitur SVG yang membuat
+// proses menggambar berhenti (panic) atau tidak tampil di UI/desktop.
 func SaveBytes(data []byte, ext, slug string) (string, error) {
 	if ext == "" {
 		ext = ".png"
+	}
+	if ext == ".svg" {
+		raster, err := Rasterize(data, 256)
+		if err != nil {
+			return "", err
+		}
+		data, ext = raster, ".png"
 	}
 	if err := os.MkdirAll(xdg.IconsDir(), 0o755); err != nil {
 		return "", err
@@ -86,14 +95,8 @@ func SaveBytes(data []byte, ext, slug string) (string, error) {
 	return dest, os.WriteFile(dest, data, 0o644)
 }
 
-// SaveData menyimpan ikon yang sudah ada di memori (mis. hasil pencarian online).
-func SaveData(data []byte, slug string) (string, error) {
-	ext := sniffExt(data)
-	if ext == "" {
-		return "", errors.New("unsupported icon format")
-	}
-	return SaveBytes(data, ext, slug)
-}
+// Ext menebak ekstensi file dari isi data (dipakai untuk ikon yang sudah diunduh UI).
+func Ext(data []byte) string { return sniffExt(data) }
 
 // IconBytes adalah ikon default LazyRun.
 func IconBytes() []byte { return assets.Icon }
