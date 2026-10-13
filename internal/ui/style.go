@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
@@ -116,6 +117,24 @@ func newLogo() *canvas.Image {
 // logoBox menampilkan ikon LazyRun pada ukuran tetap.
 func logoBox(image *canvas.Image, size float32) fyne.CanvasObject {
 	return container.NewGridWrap(fyne.NewSize(size, size), image)
+}
+
+// closeRow menempatkan tombol tutup di kanan atas isi dialog, supaya
+// selalu ada jalan keluar yang terlihat walau tombol bawah terpotong.
+func closeRow(hide func()) fyne.CanvasObject {
+	return container.NewHBox(spacer(), iconButton(theme.CancelIcon(), hide))
+}
+
+// showDialog menampilkan dialog dengan ukuran yang disesuaikan ke window.
+// Isi dialog sebaiknya dibungkus VScroll supaya MinSize-nya kecil (Fyne tidak
+// bisa mengecilkan dialog di bawah MinSize konten).
+func showDialog(d *dialog.CustomDialog, win fyne.Window, width, height float32) {
+	size := win.Canvas().Size()
+	d.Resize(fyne.NewSize(
+		fyne.Min(width, size.Width*0.9),
+		fyne.Min(height, size.Height*0.85),
+	))
+	d.Show()
 }
 
 // spacer adalah pengisi ruang kosong.

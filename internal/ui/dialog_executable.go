@@ -100,7 +100,8 @@ func (ui *app) showExecutableDialog() {
 		widget.NewFormItem(T("field_name"), nameEntry),
 		widget.NewFormItem(T("field_category"), category),
 	)
-	content := container.NewVBox(
+	content := container.NewVScroll(container.NewVBox(
+		closeRow(func() { d.Hide() }),
 		form,
 		widget.NewSeparator(),
 		sectionTitle(T("section_location")),
@@ -110,11 +111,10 @@ func (ui *app) showExecutableDialog() {
 		container.NewHBox(logoBox(newLogo(), 20), spacer(),
 			widget.NewButton(T("cancel"), func() { d.Hide() }),
 			install),
-	)
+	))
 
 	d = dialog.NewCustom(T("new_exec_title"), "", content, ui.win)
-	d.Resize(fyne.NewSize(560, 470))
-	d.Show()
+	showDialog(d, ui.win, 560, 520)
 }
 
 // pickFile membuka file picker dan mengirim path absolut ke onPick.

@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
@@ -106,7 +105,8 @@ func (ui *app) showWebAppDialog() {
 		widget.NewFormItem(T("field_icon"), container.NewBorder(nil, nil, nil,
 			container.NewHBox(onlineIcon, browseIcon), iconLabel)),
 	)
-	content := container.NewVBox(
+	content := container.NewVScroll(container.NewVBox(
+		closeRow(func() { d.Hide() }),
 		form,
 		widget.NewSeparator(),
 		sectionTitle(T("section_location")),
@@ -116,11 +116,10 @@ func (ui *app) showWebAppDialog() {
 		container.NewHBox(logoBox(newLogo(), 20), spacer(),
 			widget.NewButton(T("cancel"), func() { d.Hide() }),
 			install),
-	)
+	))
 
 	d = dialog.NewCustom(T("new_web_title"), "", content, ui.win)
-	d.Resize(fyne.NewSize(560, 470))
-	d.Show()
+	showDialog(d, ui.win, 560, 520)
 }
 
 func browserNames(list []browser.Browser) []string {

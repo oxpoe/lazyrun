@@ -49,10 +49,10 @@ func (ui *app) showIconSearch(query string, onPick func(icon.Result, []byte)) {
 
 	entry.OnSubmitted = func(string) { search() }
 	content := container.NewBorder(
-		entry,
+		container.NewVBox(closeRow(func() { d.Hide() }), entry),
 		container.NewBorder(nil, nil, status,
 			container.NewHBox(
-				widget.NewButton(T("cancel"), func() { d.Hide() }),
+				widget.NewButtonWithIcon(T("back"), theme.NavigateBackIcon(), func() { d.Hide() }),
 				widget.NewButtonWithIcon(T("search"), theme.SearchIcon(), search),
 			)),
 		nil, nil,
@@ -60,8 +60,7 @@ func (ui *app) showIconSearch(query string, onPick func(icon.Result, []byte)) {
 	)
 
 	d = dialog.NewCustom(T("icon_search_title"), "", content, ui.win)
-	d.Resize(fyne.NewSize(560, 460))
-	d.Show()
+	showDialog(d, ui.win, 560, 470)
 	search()
 }
 
