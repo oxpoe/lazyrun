@@ -44,8 +44,23 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          cat > /tmp/notes.md <<'NOTES'
+          Single-file AppImage for Linux x86_64. No root needed, everything stays in
+          `~/.local/` and `~/.config/lazyrun/`.
+
+          ```bash
+          chmod +x lazyrun-*-x86_64.AppImage
+          ./lazyrun-*-x86_64.AppImage
+          ```
+
+          Already using LazyRun? It checks this release page on startup and offers to
+          update itself (delta updates with `AppImageUpdate` when installed).
+
+          ---
+          NOTES
           gh release create "$GITHUB_REF_NAME" \
             dist/lazyrun-*.AppImage \
             dist/lazyrun-*.AppImage.zsync \
             --title "LazyRun ${GITHUB_REF_NAME}" \
+            --notes-file /tmp/notes.md \
             --generate-notes
