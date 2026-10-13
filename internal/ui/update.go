@@ -110,18 +110,18 @@ func (ui *app) showUpdateDialog(rel update.Release) {
 	buttons := container.NewHBox(
 		logoBox(newLogo(), 20),
 		spacer(),
-		widget.NewButton(T("update_later"), func() { d.Hide() }),
-		widget.NewButton(T("update_page"), func() { ui.openURL(rel.PageURL) }),
+		newButton(T("update_later"), nil, T("tip_later"), widget.MediumImportance, func() { d.Hide() }),
+		newButton(T("update_page"), nil, T("tip_update_page"), widget.MediumImportance, func() { ui.openURL(rel.PageURL) }),
 	)
 
 	if updates := ui.updaterBinary(); updates != "" {
 		// AppImageUpdate yang memasang (dan memverifikasi) sendiri
-		buttons.Add(widget.NewButtonWithIcon(T("update_now"), theme.DownloadIcon(), func() {
+		buttons.Add(newButton(T("update_now"), theme.DownloadIcon(), T("tip_update_now"), widget.HighImportance, func() {
 			d.Hide()
 			ui.runUpdater(updates, rel)
 		}))
 	} else {
-		buttons.Add(widget.NewButtonWithIcon(T("update_now"), theme.DownloadIcon(), func() {
+		buttons.Add(newButton(T("update_now"), theme.DownloadIcon(), T("tip_update_now"), widget.HighImportance, func() {
 			d.Hide()
 			ui.downloadUpdate(rel)
 		}))
@@ -151,12 +151,11 @@ func (ui *app) downloadUpdate(rel update.Release) {
 		return
 	}
 
-	progress := dialog.NewProgressInfinite(T("check_updates"), T("update_downloading"), ui.win)
-	progress.Show()
+	hide := ui.showLoading(T("check_updates"), T("update_downloading"))
 	go func() {
 		err := update.Download(rel, appImage)
 		fyne.Do(func() {
-			progress.Hide()
+			hide()
 			if err != nil {
 				dialog.ShowError(err, ui.win)
 				return
@@ -174,12 +173,11 @@ func (ui *app) runUpdater(updater string, rel update.Release) {
 		return
 	}
 
-	progress := dialog.NewProgressInfinite(T("check_updates"), T("update_downloading"), ui.win)
-	progress.Show()
+	hide := ui.showLoading(T("check_updates"), T("update_downloading"))
 	go func() {
 		err := exec.Command(updater, appImage).Run()
 		fyne.Do(func() {
-			progress.Hide()
+			hide()
 			if err != nil {
 				dialog.ShowError(err, ui.win)
 				return
@@ -195,8 +193,8 @@ func (ui *app) offerRestart() {
 	content := container.NewVBox(
 		widget.NewLabel(T("update_installed")),
 		container.NewHBox(spacer(),
-			widget.NewButton(T("update_later"), func() { d.Hide() }),
-			widget.NewButtonWithIcon(T("update_restart"), theme.ViewRefreshIcon(), ui.restart),
+			newButton(T("update_later"), nil, T("tip_later"), widget.MediumImportance, func() { d.Hide() }),
+			newButton(T("update_restart"), theme.ViewRefreshIcon(), T("tip_restart"), widget.HighImportance, ui.restart),
 		),
 	)
 	d = dialog.NewCustomWithoutButtons(T("check_updates"), content, ui.win)

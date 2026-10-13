@@ -54,13 +54,13 @@ func (ui *app) showWebAppDialog() {
 		}
 	}
 
-	browseIcon := widget.NewButtonWithIcon(T("browse"), theme.FolderOpenIcon(), func() {
+	browseIcon := newButton(T("browse"), theme.FolderOpenIcon(), T("tip_browse"), widget.MediumImportance, func() {
 		pickFile(ui.win, imageFilter, func(path string) {
 			iconPath, iconURL, iconData = path, "", nil
 			iconLabel.SetText(filepath.Base(path))
 		})
 	})
-	onlineIcon := widget.NewButtonWithIcon(T("online"), theme.SearchIcon(), func() {
+	onlineIcon := newButton(T("online"), theme.SearchIcon(), T("tip_online"), widget.MediumImportance, func() {
 		ui.showIconSearch(nameEntry.Text, func(result icon.Result, data []byte) {
 			iconURL, iconPath, iconData = result.URL, "", data
 			iconLabel.SetText(result.Name)
@@ -68,7 +68,7 @@ func (ui *app) showWebAppDialog() {
 	})
 
 	var d *dialog.CustomDialog
-	install := widget.NewButtonWithIcon(T("install"), theme.DownloadIcon(), func() {
+	install := newButton(T("install"), theme.DownloadIcon(), T("tip_install"), widget.HighImportance, func() {
 		switch {
 		case strings.TrimSpace(urlEntry.Text) == "":
 			dialog.ShowInformation(T("err_title"), T("need_url"), ui.win)
@@ -96,8 +96,6 @@ func (ui *app) showWebAppDialog() {
 			func(sc store.Shortcut, err error) { ui.added(sc, err, d.Hide) },
 		)
 	})
-	install.Importance = widget.HighImportance
-
 	form := widget.NewForm(
 		widget.NewFormItem(T("field_url"), urlEntry),
 		widget.NewFormItem(T("field_name"), nameEntry),
@@ -105,6 +103,7 @@ func (ui *app) showWebAppDialog() {
 		widget.NewFormItem(T("field_icon"), container.NewBorder(nil, nil, nil,
 			container.NewHBox(onlineIcon, browseIcon), iconLabel)),
 	)
+	hint := textLine(T("web_hint"), 12, false, colorNameMuted)
 	content := container.NewVScroll(container.NewVBox(
 		closeRow(func() { d.Hide() }),
 		form,
@@ -112,13 +111,14 @@ func (ui *app) showWebAppDialog() {
 		sectionTitle(T("section_location")),
 		menu,
 		desktop,
-		muted(T("web_hint")),
+		hint,
 		container.NewHBox(logoBox(newLogo(), 20), spacer(),
-			widget.NewButton(T("cancel"), func() { d.Hide() }),
+			newButton(T("cancel"), nil, T("tip_cancel"), widget.MediumImportance, func() { d.Hide() }),
 			install),
 	))
 
 	d = dialog.NewCustomWithoutButtons(T("new_web_title"), content, ui.win)
+	d.SetOnClosed(pushHintTarget(hint))
 	showDialog(d, ui.win, 560, 520)
 }
 

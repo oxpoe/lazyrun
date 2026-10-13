@@ -32,6 +32,7 @@ type app struct {
 	icons       *iconCache
 	count       *canvas.Text // angka jumlah shortcut di header daftar
 	versionText *canvas.Text // versi di footer; berubah kalau ada update
+	hint        *canvas.Text // keterangan tombol yang sedang disorot
 	accent      *canvas.LinearGradient
 	version     string
 }
@@ -40,6 +41,7 @@ type app struct {
 func Run(a fyne.App, version string) {
 	ui, loadErr := build(a, version)
 	ui.win.Show()
+	pushHintTarget(ui.hint) // target default: baris hint di footer
 	ui.flashCards()
 	ui.scheduleUpdateCheck()
 	if loadErr != nil {
@@ -67,9 +69,8 @@ func build(a fyne.App, version string) (*app, error) {
 	st, err := store.Load(xdg.MetadataPath())
 	ui.store = st
 
-	addExec := widget.NewButtonWithIcon(T("btn_executable"), theme.ContentAddIcon(), ui.showExecutableDialog)
-	addExec.Importance = widget.HighImportance
-	addWeb := widget.NewButtonWithIcon(T("btn_webapp"), theme.ContentAddIcon(), ui.showWebAppDialog)
+	addExec := newButton(T("btn_executable"), theme.ContentAddIcon(), T("tip_executable"), widget.HighImportance, ui.showExecutableDialog)
+	addWeb := newButton(T("btn_webapp"), theme.ContentAddIcon(), T("tip_webapp"), widget.MediumImportance, ui.showWebAppDialog)
 
 	leftHeader := container.NewHBox(logoBox(newLogo(), 40), container.NewVBox(
 		heading("LazyRun"),
@@ -78,14 +79,17 @@ func build(a fyne.App, version string) (*app, error) {
 	rightHeader := container.NewHBox(addExec, addWeb)
 	header := container.NewBorder(nil, nil, leftHeader, rightHeader)
 
-	update := widget.NewButtonWithIcon(T("check_updates"), theme.DownloadIcon(), ui.checkUpdates)
-	github := widget.NewButton(T("github"), func() { ui.openURL(repoURL) })
-	donate := widget.NewButtonWithIcon(T("donate"),
-		fyne.NewStaticResource("heart.png", assets.Heart), func() { ui.openURL(donateURL) })
+	update := newButton(T("check_updates"), theme.DownloadIcon(), T("tip_check_updates"), widget.MediumImportance, ui.checkUpdates)
+	github := newButton(T("github"), nil, T("tip_github"), widget.MediumImportance, func() { ui.openURL(repoURL) })
+	donate := newButton(T("donate"), fyne.NewStaticResource("heart.png", assets.Heart), T("tip_donate"), widget.MediumImportance, func() { ui.openURL(donateURL) })
+	export := newIconButton(theme.DocumentSaveIcon(), T("tip_export"), ui.exportShortcuts)
+	importBtn := newIconButton(theme.StorageIcon(), T("tip_import"), ui.importShortcuts)
+	ui.hint = caption("")
 	footer := container.NewBorder(
 		widget.NewSeparator(), nil,
-		container.NewHBox(update, github, donate),
+		container.NewHBox(update, export, importBtn, github, donate),
 		ui.versionText,
+		ui.hint,
 	)
 
 	ui.accent = accentBar()
@@ -145,16 +149,17 @@ func (ui *app) row(sc store.Shortcut) *hoverCard {
 	}
 
 	actions := container.NewHBox(chips...)
-	actions.Add(iconButton(theme.MediaPlayIcon(), func() { ui.launch(sc) }))
+	actions.Add(newIconButton(theme.MediaPlayIcon(), T("tip_run"), func() { ui.launch(sc) }))
 	if syncable(sc) {
-		actions.Add(iconButton(theme.ViewRefreshIcon(), func() { ui.syncIcon(sc) }))
+		actions.Add(newIconButton(theme.ViewRefreshIcon(), T("tip_sync"), func() { ui.syncIcon(sc) }))
 	}
-	actions.Add(iconButton(theme.FolderOpenIcon(), func() {
+	actions.Add(newIconButton(theme.DocumentCreateIcon(), T("tip_edit"), func() { ui.showEditDialog(sc) }))
+	actions.Add(newIconButton(theme.FolderOpenIcon(), T("tip_folder"), func() {
 		if err := exec.Command("xdg-open", filepath.Dir(sc.DesktopPath)).Start(); err != nil {
 			dialog.ShowError(err, ui.win)
 		}
 	}))
-	actions.Add(iconButton(theme.DeleteIcon(), func() { ui.confirmDelete(sc) }))
+	actions.Add(newIconButton(theme.DeleteIcon(), T("tip_delete"), func() { ui.confirmDelete(sc) }))
 
 	return newHoverCard(container.NewBorder(nil, nil,
 		container.NewHBox(thumb(sc.IconPath, fallbackIcon(sc)), info),
@@ -239,12 +244,11 @@ func syncable(sc store.Shortcut) bool {
 
 // syncIcon mengunduh ulang ikon shortcut dari sumber online-nya.
 func (ui *app) syncIcon(sc store.Shortcut) {
-	progress := dialog.NewProgressInfinite(T("sync_icon"), T("working"), ui.win)
-	progress.Show()
+	hide := ui.showLoading(T("sync_icon"), T("working"))
 	go func() {
 		path, err := shortcut.RefreshIcon(sc)
 		fyne.Do(func() {
-			progress.Hide()
+			hide()
 			if err != nil {
 				dialog.ShowError(err, ui.win)
 				return
@@ -292,14 +296,14 @@ func (ui *app) confirmDelete(sc store.Shortcut) {
 	d.Show()
 }
 
-// install menjalankan pekerjaan berat (salin file besar / fetch favicon) di luar UI thread.
+// install menjalankan pekerjaan berat (salin file besar / unduh ikon) di luar UI thread,
+// dengan dialog proses berisi progress bar.
 func (ui *app) install(work func() (store.Shortcut, error), done func(store.Shortcut, error)) {
-	progress := dialog.NewProgressInfinite(T("install"), T("working"), ui.win)
-	progress.Show()
+	hide := ui.showLoading(T("install"), T("working"))
 	go func() {
 		sc, err := work()
 		fyne.Do(func() {
-			progress.Hide()
+			hide()
 			done(sc, err)
 		})
 	}()

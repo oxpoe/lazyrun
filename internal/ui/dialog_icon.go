@@ -87,10 +87,11 @@ func (ui *app) showIconSearch(query string, onPick func(icon.Result, []byte)) {
 	entry.OnSubmitted = func(string) { search() }
 	// status di barisnya sendiri: supaya tidak bertabrakan dengan tombol
 	// di layar sempit atau ber-penskalaan besar.
-	bottom := container.NewVBox(status, container.NewHBox(
+	hint := textLine(T("icon_search_hint"), 12, false, colorNameMuted)
+	bottom := container.NewVBox(hint, status, container.NewHBox(
 		spacer(),
-		widget.NewButtonWithIcon(T("back"), theme.NavigateBackIcon(), func() { d.Hide() }),
-		widget.NewButtonWithIcon(T("search"), theme.SearchIcon(), search),
+		newButton(T("back"), theme.NavigateBackIcon(), T("tip_back"), widget.MediumImportance, func() { d.Hide() }),
+		newButton(T("search"), theme.SearchIcon(), T("tip_search"), widget.HighImportance, search),
 	))
 	content := container.NewBorder(
 		container.NewVBox(closeRow(func() { d.Hide() }), entry),
@@ -99,6 +100,7 @@ func (ui *app) showIconSearch(query string, onPick func(icon.Result, []byte)) {
 	)
 
 	d = dialog.NewCustomWithoutButtons(T("icon_search_title"), content, ui.win)
+	d.SetOnClosed(pushHintTarget(hint))
 	showDialog(d, ui.win, 560, 470) // sekaligus menampilkan dialog
 	search()
 }
@@ -126,7 +128,7 @@ func (ui *app) iconChoice(result icon.Result, onPick func(icon.Result, []byte), 
 	var mu sync.Mutex
 	var raw []byte
 
-	button := widget.NewButton("", func() {
+	button := newButton("", nil, result.Name, widget.LowImportance, func() {
 		mu.Lock()
 		picked := raw
 		mu.Unlock()
@@ -135,8 +137,8 @@ func (ui *app) iconChoice(result icon.Result, onPick func(icon.Result, []byte), 
 			d.Hide()
 		}
 	})
-	button.Importance = widget.LowImportance
 	button.Icon = theme.NewThemedResource(theme.FileImageIcon()) // placeholder selama diunduh
+	button.Refresh()
 
 	go func() {
 		slot <- struct{}{}

@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/test"
 
 	"lazyrun/internal/icon"
+	"lazyrun/internal/store"
 )
 
 // TestNoEmptyDismissButton memastikan modal tidak memakai dialog.NewCustom,
@@ -62,6 +63,17 @@ func TestDialogsOpenWithoutPanic(t *testing.T) {
 			t.Fatal("modal web app tidak muncul")
 		}
 	}
+	ui.showEditDialog(store.Shortcut{Slug: "winbox", Name: "Winbox", Type: store.TypeExecutable, Kind: "windows",
+		BinaryPath: "/tmp/winbox", IconPath: "", Categories: "Network;", Targets: store.Targets{Menu: true, Desktop: true}})
+	if top := ui.win.Canvas().Overlays().Top(); top == nil {
+		t.Fatal("modal edit executable tidak muncul")
+	}
+	ui.showEditDialog(store.Shortcut{Slug: "wa", Name: "WhatsApp Web", Type: store.TypeWebApp, Kind: "pwa",
+		URL: "https://web.whatsapp.com", Browser: "/usr/bin/vivaldi", Targets: store.Targets{Menu: true}})
+	if top := ui.win.Canvas().Overlays().Top(); top == nil {
+		t.Fatal("modal edit webapp tidak muncul")
+	}
+
 	ui.showIconSearch("whatsapp", func(icon.Result, []byte) {})
 	if top := ui.win.Canvas().Overlays().Top(); top == nil {
 		t.Fatal("modal pencarian ikon tidak muncul")
@@ -106,5 +118,29 @@ func TestStringsCoverUsedKeys(t *testing.T) {
 		if !used[key] {
 			t.Errorf("kunci %q ada di tabel terjemahan tapi tidak dipakai", key)
 		}
+	}
+}
+
+func TestMergeImported(t *testing.T) {
+	target := &store.Store{}
+	target.Add(store.Shortcut{Slug: "winbox", Name: "Winbox"})
+
+	added, skipped := mergeImported(target, []store.Shortcut{
+		{Slug: "winbox", Name: "Winbox lama"},  // sudah ada -> dilewati
+		{Slug: "figma", Name: "Figma"},         // baru
+		{Slug: "", Name: "Tanpa slug"},         // rusak -> dilewati
+		{Slug: "kosong", Name: "   "},          // tanpa nama -> dilewati
+		{Slug: "deploy", Name: " deploy.sh  "}, // nama dirapikan
+	})
+
+	if added != 2 || skipped != 3 {
+		t.Errorf("added=%d skipped=%d, mau 2 dan 3", added, skipped)
+	}
+	if len(target.Items) != 3 {
+		t.Errorf("jumlah item = %d", len(target.Items))
+	}
+	dep, ok := target.Get("deploy")
+	if !ok || target.Items[dep].Name != "deploy.sh" {
+		t.Errorf("nama item tidak dirapikan: %+v", target.Items)
 	}
 }

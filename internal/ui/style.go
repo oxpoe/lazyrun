@@ -83,13 +83,6 @@ func accentBar() *canvas.LinearGradient {
 	return bar
 }
 
-// iconButton adalah tombol ikon tanpa label, gaya datar.
-func iconButton(icon fyne.Resource, tapped func()) *widget.Button {
-	button := widget.NewButtonWithIcon("", icon, tapped)
-	button.Importance = widget.LowImportance
-	return button
-}
-
 // thumb menampilkan ikon shortcut, atau fallback kalau file ikonnya hilang.
 func thumb(path string, fallback fyne.Resource) fyne.CanvasObject {
 	var image *canvas.Image
@@ -122,7 +115,7 @@ func logoBox(image *canvas.Image, size float32) fyne.CanvasObject {
 // closeRow menempatkan tombol tutup di kanan atas isi dialog, supaya
 // selalu ada jalan keluar yang terlihat walau tombol bawah terpotong.
 func closeRow(hide func()) fyne.CanvasObject {
-	return container.NewHBox(spacer(), iconButton(theme.CancelIcon(), hide))
+	return container.NewHBox(spacer(), newIconButton(theme.CancelIcon(), T("tip_close"), hide))
 }
 
 // showDialog menampilkan dialog dengan ukuran yang disesuaikan ke window.
