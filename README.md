@@ -1,8 +1,21 @@
 # LazyRun — lazy shortcut build
 
+[![CI](https://github.com/oxpoe/lazyrun/actions/workflows/ci.yml/badge.svg)](https://github.com/oxpoe/lazyrun/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/oxpoe/lazyrun?label=release)](https://github.com/oxpoe/lazyrun/releases/latest)
+[![License](https://img.shields.io/github/license/oxpoe/lazyrun)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-Linux-blue)
+![UI](https://img.shields.io/badge/UI-Fyne%20%2F%20Go-00ADD8)
+
 Desktop app (Go + Fyne) that creates application shortcuts on Linux in a few clicks:
 from an executable file, or from a web URL as a PWA. Ships as a single-file
 AppImage, no terminal needed.
+
+![LazyRun main window](docs/main-dark.png)
+
+<p align="center">
+  <img src="docs/dialog-executable.png" width="49%" alt="New executable shortcut dialog">
+  <img src="docs/dialog-icons.png" width="49%" alt="Icon search dialog">
+</p>
 
 - **Repo:** <https://github.com/oxpoe/lazyrun>
 - **Donate:** <https://donasi.oxpoe.qzz.io/>
@@ -39,6 +52,9 @@ AppImage, no terminal needed.
 
 ## Install
 
+Needs a desktop Linux with the usual GL/X11 or Wayland libraries (any KDE Plasma or
+GNOME install has them). No root, nothing outside your home directory.
+
 Download the AppImage from [Releases](https://github.com/oxpoe/lazyrun/releases), then:
 
 ```bash
@@ -66,6 +82,12 @@ Keep it wherever you like (for example `~/.local/bin/`). Automatic updates need
 | LazyRun metadata | `~/.config/lazyrun/shortcuts.json` |
 
 Everything stays inside the home directory — no root, no system directories.
+
+The UI follows your system light/dark setting:
+
+<p align="center">
+  <img src="docs/main-light.png" width="520" alt="LazyRun in light theme">
+</p>
 Filenames use a slug of the app name (`WhatsApp Web` → `whatsapp-web.desktop`);
 the `Name=` field keeps the name you typed.
 
