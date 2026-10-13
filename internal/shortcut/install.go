@@ -105,3 +105,53 @@ func desktopCopy(desktopPath, slug string) (string, error) {
 	}
 	return dst, copyFile(desktopPath, dst, 0o755)
 }
+
+// installBinary menyalin berkas target ke binDst.
+//
+// Script dapat perlakuan khusus: yang disalin adalah script aslinya (dengan
+// akhiran .real) plus wrapper kecil. Desktop environment menjalankan shortcut
+// dengan cwd = home dan PATH sesi, sehingga script yang memakai path relatif
+// atau tool di ~/.local/bin gagal; wrapper yang membereskan keduanya.
+func installBinary(kind, src, binDst string) error {
+	if kind == KindScript {
+		if err := copyFile(src, binDst+scriptSuffix, 0o755); err != nil {
+			return err
+		}
+		return writeScriptWrapper(binDst, binDst+scriptSuffix, filepath.Dir(src))
+	}
+	if samePath(src, binDst) {
+		return nil
+	}
+	return copyFile(src, binDst, 0o755)
+}
+
+// writeFileMode menulis berkas dengan mode tertentu (dipakai saat restore).
+func writeFileMode(path string, data []byte, mode os.FileMode) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, mode)
+}
+
+// scriptSuffix adalah akhiran berkas script asli di samping wrapper.
+const scriptSuffix = ".real"
+
+// writeScriptWrapper menulis wrapper yang menyiapkan PATH dan folder kerja
+// sebelum menjalankan script aslinya.
+func writeScriptWrapper(path, real, originDir string) error {
+	body := "#!/bin/sh\n" +
+		"# dibuat oleh LazyRun: siapkan PATH & folder kerja lalu jalankan script aslinya\n" +
+		`PATH="$HOME/.local/bin:$PATH"` + "\n" +
+		"export PATH\n"
+	if originDir != "" && originDir != "." {
+		quoted := shellQuote(originDir)
+		body += "if [ -d " + quoted + " ]; then cd " + quoted + " || exit 1; fi\n"
+	}
+	body += "exec " + shellQuote(real) + ` "$@"` + "\n"
+	return os.WriteFile(path, []byte(body), 0o755)
+}
+
+// shellQuote mengutip nilai untuk dipakai di dalam script shell.
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
+}

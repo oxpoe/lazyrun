@@ -30,6 +30,7 @@ type Shortcut struct {
 	Browser         string    `json:"browser,omitempty"`
 	ExecArgs        []string  `json:"exec_args,omitempty"`
 	Categories      string    `json:"categories,omitempty"`
+	Terminal        bool      `json:"terminal,omitempty"`
 	BinaryPath      string    `json:"binary_path,omitempty"`
 	IconPath        string    `json:"icon_path,omitempty"`
 	IconSource      string    `json:"icon_source,omitempty"`

@@ -16,7 +16,8 @@ import (
 )
 
 // FormatVersion dipakai untuk mengenali berkas .lazy buatan LazyRun.
-const FormatVersion = "1"
+// Versi 1 hanya metadata; versi 2 menyertakan isi binary dan ikon.
+const FormatVersion = "2"
 
 // DefaultName adalah nama berkas cadangan yang disarankan.
 const DefaultName = "lazyrun-shortcuts.lazy"
@@ -40,9 +41,12 @@ CREATE TABLE shortcuts (
 	icon_source       TEXT,
 	desktop_path      TEXT,
 	desktop_copy_path TEXT,
+	terminal          INTEGER NOT NULL DEFAULT 0,
 	menu              INTEGER NOT NULL,
 	desktop           INTEGER NOT NULL,
-	installed_at      TEXT
+	installed_at      TEXT,
+	binary_data       BLOB,
+	icon_data         BLOB
 );`
 
 // Export menulis seluruh daftar shortcut ke berkas SQLite baru.
@@ -80,7 +84,8 @@ func Export(path string, appVersion string, items []store.Shortcut) error {
 	insert, err := tx.Prepare(`INSERT INTO shortcuts(
 		slug, name, type, kind, url, browser, exec_args, categories,
 		binary_path, icon_path, icon_source, desktop_path, desktop_copy_path,
-		menu, desktop, installed_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		terminal, menu, desktop, installed_at, binary_data, icon_data)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -92,8 +97,8 @@ func Export(path string, appVersion string, items []store.Shortcut) error {
 			item.Slug, item.Name, item.Type, item.Kind, item.URL, item.Browser,
 			strings.Join(item.ExecArgs, "\x00"), item.Categories,
 			item.BinaryPath, item.IconPath, item.IconSource, item.DesktopPath,
-			item.DesktopCopyPath, boolToInt(item.Targets.Menu), boolToInt(item.Targets.Desktop),
-			item.InstalledAt.Format(time.RFC3339),
+			item.DesktopCopyPath, boolToInt(item.Terminal), boolToInt(item.Targets.Menu), boolToInt(item.Targets.Desktop),
+			item.InstalledAt.Format(time.RFC3339), readBlob(item.BinaryPath), readBlob(item.IconPath),
 		)
 		if err != nil {
 			tx.Rollback()
@@ -103,8 +108,34 @@ func Export(path string, appVersion string, items []store.Shortcut) error {
 	return tx.Commit()
 }
 
+// Backup adalah satu shortcut beserta isi berkasnya dari .lazy.
+type Backup struct {
+	Item   store.Shortcut
+	Binary []byte // isi binary/script (kalau ada)
+	Icon   []byte // isi berkas ikon (kalau ada)
+}
+
+// maxBlobFile adalah batas ukuran berkas yang ikut disimpan ke cadangan.
+const maxBlobFile = 512 << 20
+
+// readBlob membaca isi berkas untuk disimpan ke cadangan; gagal/kebesaran = kosong.
+func readBlob(path string) []byte {
+	if path == "" {
+		return nil
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() || info.Size() > maxBlobFile {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	return data
+}
+
 // Import membaca daftar shortcut dari berkas .lazy.
-func Import(path string) ([]store.Shortcut, error) {
+func Import(path string) ([]Backup, error) {
 	if _, err := os.Stat(path); err != nil {
 		return nil, err
 	}
@@ -119,37 +150,45 @@ func Import(path string) ([]store.Shortcut, error) {
 	if err := conn.QueryRow("SELECT value FROM meta WHERE key = 'format'").Scan(&format); err != nil {
 		return nil, fmt.Errorf("bukan basis data LazyRun: %w", err)
 	}
-	if format != FormatVersion {
+	switch format {
+	case FormatVersion:
+		// versi sekarang: ada blobs
+	case "1":
+		// cadangan lama: hanya metadata, berkas dipulihkan dari sumber lain
+	default:
 		return nil, fmt.Errorf("versi basis data %s tidak didukung (mendukung %s)", format, FormatVersion)
 	}
 
 	rows, err := conn.Query(`SELECT slug, name, type, kind, url, browser, exec_args,
 		categories, binary_path, icon_path, icon_source, desktop_path,
-		desktop_copy_path, menu, desktop, installed_at FROM shortcuts ORDER BY name`)
+		desktop_copy_path, terminal, menu, desktop, installed_at,
+		binary_data, icon_data FROM shortcuts ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var items []store.Shortcut
+	var items []Backup
 	for rows.Next() {
 		var item store.Shortcut
 		var args, installed string
-		var menu, desktop int
+		var terminal, menu, desktop int
+		var binary, iconBlob []byte
 		if err := rows.Scan(&item.Slug, &item.Name, &item.Type, &item.Kind, &item.URL,
 			&item.Browser, &args, &item.Categories, &item.BinaryPath, &item.IconPath,
 			&item.IconSource, &item.DesktopPath, &item.DesktopCopyPath,
-			&menu, &desktop, &installed); err != nil {
+			&terminal, &menu, &desktop, &installed, &binary, &iconBlob); err != nil {
 			return nil, err
 		}
 		if args != "" {
 			item.ExecArgs = strings.Split(args, "\x00")
 		}
+		item.Terminal = terminal != 0
 		item.Targets = store.Targets{Menu: menu != 0, Desktop: desktop != 0}
 		if t, err := time.Parse(time.RFC3339, installed); err == nil {
 			item.InstalledAt = t
 		}
-		items = append(items, item)
+		items = append(items, Backup{Item: item, Binary: binary, Icon: iconBlob})
 	}
 	return items, rows.Err()
 }

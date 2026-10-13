@@ -14,6 +14,8 @@ type Entry struct {
 	ExecArgs   []string // argv lengkap; tiap arg di-quote sesuai spec Exec
 	Icon       string   // path absolut atau nama ikon
 	Categories string   // sudah diakhiri ";" atau kosong
+	Terminal   bool     // true = jalankan di terminal (untuk script interaktif)
+	WorkingDir string   // folder kerja saat dijalankan (Path=), opsional
 	// NoDisplay menyembunyikan entry dari menu aplikasi. Dipakai kalau user
 	// hanya memilih Desktop: file tetap ada di applications/ sebagai sumber kebenaran.
 	NoDisplay bool
@@ -29,7 +31,10 @@ func (e Entry) Render() string {
 	if e.Icon != "" {
 		fmt.Fprintf(&b, "Icon=%s\n", escapeValue(e.Icon))
 	}
-	b.WriteString("Terminal=false\n")
+	fmt.Fprintf(&b, "Terminal=%t\n", e.Terminal)
+	if e.WorkingDir != "" {
+		fmt.Fprintf(&b, "Path=%s\n", escapeValue(e.WorkingDir))
+	}
 	if e.Categories != "" {
 		fmt.Fprintf(&b, "Categories=%s\n", escapeValue(e.Categories))
 	}
@@ -70,6 +75,9 @@ func escapeValue(s string) string {
 	r := strings.NewReplacer("\\", "\\\\", "\n", "\\n", "\r", "\\r", "\t", "\\t")
 	return r.Replace(s)
 }
+
+// Slug mengembalikan nama berkas yang aman dari nama aplikasi (dipakai UI).
+func Slug(name string) string { return slugify(name) }
 
 // slugify membuat nama file yang aman dari nama aplikasi.
 func slugify(name string) string {

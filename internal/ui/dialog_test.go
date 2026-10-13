@@ -10,6 +10,7 @@ import (
 
 	"fyne.io/fyne/v2/test"
 
+	"lazyrun/internal/db"
 	"lazyrun/internal/icon"
 	"lazyrun/internal/store"
 )
@@ -121,26 +122,55 @@ func TestStringsCoverUsedKeys(t *testing.T) {
 	}
 }
 
-func TestMergeImported(t *testing.T) {
-	target := &store.Store{}
-	target.Add(store.Shortcut{Slug: "winbox", Name: "Winbox"})
+// TestRestoreImported memasang ulang entri cadangan: berkas dibuat di HOME saat ini
+// dan entri yang sudah ada tidak ditimpa.
+func TestRestoreImported(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", "")
+	t.Setenv("PATH", "")
 
-	added, skipped := mergeImported(target, []store.Shortcut{
-		{Slug: "winbox", Name: "Winbox lama"},  // sudah ada -> dilewati
-		{Slug: "figma", Name: "Figma"},         // baru
-		{Slug: "", Name: "Tanpa slug"},         // rusak -> dilewati
-		{Slug: "kosong", Name: "   "},          // tanpa nama -> dilewati
-		{Slug: "deploy", Name: " deploy.sh  "}, // nama dirapikan
-	})
+	script := []byte("#!/bin/sh\necho halo\n")
+	items := []db.Backup{
+		{Item: store.Shortcut{Slug: "lama", Name: "Deploy", Type: store.TypeExecutable, Kind: "script",
+			BinaryPath: "/komputer-lama/.local/bin/deploy", Targets: store.Targets{Menu: true}}, Binary: script},
+		{Item: store.Shortcut{Name: "Figma", Type: store.TypeWebApp, Kind: "pwa",
+			URL: "https://figma.com", Browser: "/usr/bin/vivaldi", Targets: store.Targets{Menu: true}}},
+	}
 
-	if added != 2 || skipped != 3 {
-		t.Errorf("added=%d skipped=%d, mau 2 dan 3", added, skipped)
+	a := test.NewApp()
+	defer a.Quit()
+	ui, err := build(a, "test")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if len(target.Items) != 3 {
-		t.Errorf("jumlah item = %d", len(target.Items))
+	ui.store.Items = nil
+	ui.store.Add(store.Shortcut{Slug: "figma", Name: "Figma"}) // sudah ada -> dilewati
+
+	added, skipped := ui.restoreImported(items)
+	if added != 1 || skipped != 1 {
+		t.Fatalf("added=%d skipped=%d, mau 1 dan 1", added, skipped)
 	}
-	dep, ok := target.Get("deploy")
-	if !ok || target.Items[dep].Name != "deploy.sh" {
-		t.Errorf("nama item tidak dirapikan: %+v", target.Items)
+
+	deploy, ok := ui.store.Get("deploy")
+	if !ok {
+		t.Fatal("shortcut hasil restore tidak masuk daftar")
+	}
+	sc := ui.store.Items[deploy]
+	want := filepath.Join(home, ".local", "bin", "deploy")
+	if sc.BinaryPath != want {
+		t.Errorf("binary = %s, mau %s", sc.BinaryPath, want)
+	}
+	if _, err := os.Stat(want + ".real"); err != nil {
+		t.Errorf("script asli (.real) tidak ditulis: %v", err)
+	}
+	if _, err := os.Stat(sc.DesktopPath); err != nil {
+		t.Errorf(".desktop tidak dibuat: %v", err)
+	}
+	if sc.IconPath == "" {
+		t.Error("ikon tidak dipasang")
+	}
+	if sc.Kind != "script" {
+		t.Errorf("kind hasil restore = %q", sc.Kind)
 	}
 }

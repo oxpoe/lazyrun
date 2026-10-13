@@ -40,11 +40,20 @@ func (ui *app) showExecutableDialog() {
 	menu.SetChecked(true)
 	desktop := widget.NewCheck(T("check_desktop"), nil)
 	desktop.SetChecked(true)
+	terminal := widget.NewCheck(T("check_terminal"), nil)
+	terminal.Hide() // hanya relevan untuk script
 
 	browseBin := newButton(T("browse"), theme.FolderOpenIcon(), T("tip_browse"), widget.MediumImportance, func() {
 		pickFile(ui.win, nil, func(path string) {
 			binPath = path
 			binLabel.SetText(filepath.Base(path) + " · " + detectedKind(path))
+			// terminal hanya perlu untuk script; tampilkan kalau terdeteksi
+			if shortcut.DetectKind(path) == shortcut.KindScript {
+				terminal.Show()
+			} else {
+				terminal.SetChecked(false)
+				terminal.Hide()
+			}
 			if strings.TrimSpace(nameEntry.Text) == "" {
 				nameEntry.SetText(appNameFromFile(path))
 			}
@@ -83,6 +92,7 @@ func (ui *app) showExecutableDialog() {
 			IconData:   iconData,
 			Name:       nameEntry.Text,
 			Category:   category.Selected,
+			Terminal:   terminal.Checked,
 			Menu:       menu.Checked,
 			Desktop:    desktop.Checked,
 		}
@@ -106,6 +116,7 @@ func (ui *app) showExecutableDialog() {
 		sectionTitle(T("section_location")),
 		menu,
 		desktop,
+		terminal,
 		hint,
 		container.NewHBox(logoBox(newLogo(), 20), spacer(),
 			newButton(T("cancel"), nil, T("tip_cancel"), widget.MediumImportance, func() { d.Hide() }),

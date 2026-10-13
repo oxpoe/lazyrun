@@ -72,7 +72,7 @@ func (ui *app) importShortcuts() {
 			return
 		}
 
-		added, skipped := mergeImported(ui.store, items)
+		added, skipped := ui.restoreImported(items)
 		if err := ui.store.Save(); err != nil {
 			dialog.ShowError(err, ui.win)
 			return
@@ -98,6 +98,11 @@ func (ui *app) showEditDialog(sc store.Shortcut) {
 	menu.SetChecked(sc.Targets.Menu)
 	desktopChk := widget.NewCheck(T("check_desktop"), nil)
 	desktopChk.SetChecked(sc.Targets.Desktop)
+	terminal := widget.NewCheck(T("check_terminal"), nil)
+	terminal.SetChecked(sc.Terminal)
+	if sc.Kind != shortcut.KindScript {
+		terminal.Hide()
+	}
 
 	browseIcon := newButton(T("browse"), theme.FolderOpenIcon(), T("tip_browse"), widget.MediumImportance, func() {
 		pickFile(ui.win, imageFilter, func(path string) {
@@ -118,6 +123,12 @@ func (ui *app) showEditDialog(sc store.Shortcut) {
 		pickFile(ui.win, nil, func(path string) {
 			binPath = path
 			binLabel.SetText(filepath.Base(path) + " · " + detectedKind(path))
+			if shortcut.DetectKind(path) == shortcut.KindScript {
+				terminal.Show()
+			} else {
+				terminal.SetChecked(false)
+				terminal.Hide()
+			}
 		})
 	})
 	category := widget.NewSelect(categories, nil)
@@ -185,6 +196,7 @@ func (ui *app) showEditDialog(sc store.Shortcut) {
 				IconData:   iconData,
 				Name:       nameEntry.Text,
 				Category:   category.Selected,
+				Terminal:   terminal.Checked,
 				Menu:       menu.Checked,
 				Desktop:    desktopChk.Checked,
 			})
@@ -215,6 +227,7 @@ func (ui *app) showEditDialog(sc store.Shortcut) {
 		sectionTitle(T("section_location")),
 		menu,
 		desktopChk,
+		terminal,
 		hint,
 		container.NewHBox(logoBox(newLogo(), 20), spacer(),
 			newButton(T("cancel"), nil, T("tip_cancel"), widget.MediumImportance, func() { d.Hide() }),
@@ -226,19 +239,28 @@ func (ui *app) showEditDialog(sc store.Shortcut) {
 	showDialog(d, ui.win, 560, 520)
 }
 
-// mergeImported menambahkan shortcut hasil impor tanpa menimpa yang sudah ada.
-func mergeImported(target *store.Store, items []store.Shortcut) (added, skipped int) {
-	for _, item := range items {
+// restoreImported memasang ulang setiap entri cadangan ke mesin ini
+// (binary, ikon, .desktop) lalu menambahkannya ke daftar, tanpa menimpa
+// shortcut yang sudah ada.
+func (ui *app) restoreImported(items []db.Backup) (added, skipped int) {
+	for _, backup := range items {
+		item := backup.Item
 		item.Name = strings.TrimSpace(item.Name)
-		if item.Name == "" || item.Slug == "" {
+		if item.Name == "" {
 			skipped++
 			continue
 		}
-		if _, exists := target.Get(item.Slug); exists {
+		if _, exists := ui.store.Get(shortcut.Slug(item.Name)); exists {
 			skipped++
 			continue
 		}
-		target.Add(item)
+
+		restored, err := shortcut.Restore(item, backup.Binary, backup.Icon)
+		if err != nil {
+			skipped++
+			continue
+		}
+		ui.store.Add(restored)
 		added++
 	}
 	return added, skipped

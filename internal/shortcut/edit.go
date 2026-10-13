@@ -36,14 +36,11 @@ func EditExecutable(old store.Shortcut, o ExecOptions) (store.Shortcut, error) {
 		}
 	}
 
-	// salin kalau sumbernya bukan berkas yang sudah terpasang
-	if !samePath(src, binDst) {
-		if err := copyFile(src, binDst, 0o755); err != nil {
-			return old, err
-		}
+	kind := DetectKind(src)
+	if err := installBinary(kind, src, binDst); err != nil {
+		return old, err
 	}
 
-	kind := DetectKind(binDst)
 	execArgs := []string{binDst}
 	if kind == KindWindows {
 		wine, err := exec.LookPath("wine")
@@ -73,24 +70,33 @@ func EditExecutable(old store.Shortcut, o ExecOptions) (store.Shortcut, error) {
 		}
 	}
 
+	entry := Entry{
+		Name:       name,
+		ExecArgs:   execArgs,
+		Icon:       iconPath,
+		Categories: category,
+		Terminal:   o.Terminal && kind != KindWindows,
+		NoDisplay:  !o.Menu,
+	}
+	if kind == KindScript {
+		if _, err := os.Stat(filepath.Dir(src)); err == nil {
+			entry.WorkingDir = filepath.Dir(src)
+		}
+	}
+
 	updated := old
 	updated.Slug = sl
 	updated.Name = name
 	updated.Kind = kind
 	updated.ExecArgs = execArgs
 	updated.Categories = category
+	updated.Terminal = entry.Terminal
 	updated.BinaryPath = binDst
 	updated.IconPath = iconPath
 	updated.IconSource = iconSource
 	updated.Targets = store.Targets{Menu: o.Menu, Desktop: o.Desktop}
 
-	if err := rewriteShortcutFiles(old, &updated, Entry{
-		Name:       name,
-		ExecArgs:   execArgs,
-		Icon:       iconPath,
-		Categories: category,
-		NoDisplay:  !o.Menu,
-	}); err != nil {
+	if err := rewriteShortcutFiles(old, &updated, entry); err != nil {
 		return old, err
 	}
 	return updated, nil

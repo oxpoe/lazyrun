@@ -62,7 +62,7 @@ func TestExportImportRoundtrip(t *testing.T) {
 	}
 
 	// urutan hasil impor berdasarkan nama: WhatsApp Web lalu Winbox
-	web, exe := got[0], got[1]
+	web, exe := got[0].Item, got[1].Item
 	if web.Slug != "whatsapp-web" || web.URL != "https://web.whatsapp.com" || !web.Targets.Menu || web.Targets.Desktop {
 		t.Errorf("data webapp tidak utuh: %+v", web)
 	}
@@ -74,6 +74,65 @@ func TestExportImportRoundtrip(t *testing.T) {
 	}
 	if !exe.InstalledAt.Equal(items[0].InstalledAt) {
 		t.Errorf("installed_at berubah: %v", exe.InstalledAt)
+	}
+}
+
+func TestExportStoresFileContents(t *testing.T) {
+	home := t.TempDir()
+	binary := filepath.Join(home, "app")
+	if err := os.WriteFile(binary, []byte("isi-binary-penting"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	iconFile := filepath.Join(home, "app.png")
+	iconBytes := append([]byte("\x89PNG\r\n\x1a\n"), []byte("ikon")...)
+	if err := os.WriteFile(iconFile, iconBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items := []store.Shortcut{{
+		Slug: "app", Name: "App", Type: store.TypeExecutable, Kind: "binary",
+		BinaryPath: binary, IconPath: iconFile, DesktopPath: filepath.Join(home, "app.desktop"),
+		Terminal: true, Targets: store.Targets{Menu: true},
+	}}
+
+	path := filepath.Join(home, "db.lazy")
+	if err := Export(path, "1.2.0", items); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := Import(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got[0].Binary) != "isi-binary-penting" {
+		t.Errorf("isi binary tidak ikut tercadang: %q", got[0].Binary)
+	}
+	if string(got[0].Icon) != string(iconBytes) {
+		t.Errorf("isi ikon tidak ikut tercadang: %q", got[0].Icon)
+	}
+	if !got[0].Item.Terminal {
+		t.Error("flag terminal hilang")
+	}
+}
+
+func TestExportSkipsMissingFiles(t *testing.T) {
+	home := t.TempDir()
+	items := []store.Shortcut{{
+		Slug: "hilang", Name: "Hilang", Type: store.TypeExecutable,
+		BinaryPath: filepath.Join(home, "tidak-ada"), DesktopPath: filepath.Join(home, "x.desktop"),
+		Targets: store.Targets{Menu: true},
+	}}
+
+	path := filepath.Join(home, "db.lazy")
+	if err := Export(path, "1.2.0", items); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Import(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || len(got[0].Binary) != 0 {
+		t.Errorf("berkas hilang tidak boleh bikin ekspor gagal: %+v", got)
 	}
 }
 

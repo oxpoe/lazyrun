@@ -21,6 +21,7 @@ type ExecOptions struct {
 	IconURL    string // opsional: URL ikon
 	IconData   []byte // opsional: ikon yang sudah diunduh UI
 	Name       string
+	Terminal   bool // jalankan di terminal (script interaktif)
 	Category   string
 	Menu       bool
 	Desktop    bool
@@ -48,10 +49,9 @@ func InstallExecutable(o ExecOptions) (store.Shortcut, error) {
 		return sc, fmt.Errorf("%s already exists, rename the app or remove that file first", binDst)
 	}
 
-	if !samePath(o.BinaryPath, binDst) {
-		if err := copyFile(o.BinaryPath, binDst, 0o755); err != nil {
-			return sc, err
-		}
+	kind := DetectKind(o.BinaryPath)
+	if err := installBinary(kind, o.BinaryPath, binDst); err != nil {
+		return sc, err
 	}
 	iconPath, iconSource, err := installIconFor(iconOptions{
 		IconPath:   o.IconPath,
@@ -66,8 +66,7 @@ func InstallExecutable(o ExecOptions) (store.Shortcut, error) {
 		return sc, err
 	}
 
-	// jenis aplikasi dideteksi otomatis; .exe Windows dijalankan lewat wine
-	kind := DetectKind(o.BinaryPath)
+	// .exe Windows dijalankan lewat wine; script lewat wrapper (PATH & cwd)
 	execArgs := []string{binDst}
 	if kind == KindWindows {
 		wine, err := exec.LookPath("wine")
@@ -82,7 +81,15 @@ func InstallExecutable(o ExecOptions) (store.Shortcut, error) {
 		ExecArgs:   execArgs,
 		Icon:       iconPath,
 		Categories: category(o.Category, "Utility;"),
+		Terminal:   o.Terminal && kind != KindWindows,
 		NoDisplay:  !o.Menu,
+	}
+	if kind == KindScript {
+		// desktop environment menjalankan dengan cwd = home, jadi folder asli
+		// script dipakai sebagai Path= kalau masih ada
+		if _, err := os.Stat(filepath.Dir(o.BinaryPath)); err == nil {
+			entry.WorkingDir = filepath.Dir(o.BinaryPath)
+		}
 	}
 	if err := WriteDesktop(deskDst, entry); err != nil {
 		return sc, err
@@ -95,6 +102,7 @@ func InstallExecutable(o ExecOptions) (store.Shortcut, error) {
 		Kind:        kind,
 		ExecArgs:    entry.ExecArgs,
 		Categories:  entry.Categories,
+		Terminal:    entry.Terminal,
 		BinaryPath:  binDst,
 		IconPath:    iconPath,
 		IconSource:  iconSource,

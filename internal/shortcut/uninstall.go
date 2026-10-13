@@ -31,8 +31,11 @@ func Uninstall(sc store.Shortcut, o RemoveOptions) error {
 		}
 	}
 	if o.Binary && sc.Type == store.TypeExecutable && sc.BinaryPath != "" {
-		if err := os.Remove(sc.BinaryPath); err != nil && !os.IsNotExist(err) {
-			errs = append(errs, err)
+		// script punya dua berkas: wrapper + script aslinya
+		for _, path := range []string{sc.BinaryPath, sc.BinaryPath + scriptSuffix} {
+			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+				errs = append(errs, err)
+			}
 		}
 	}
 
