@@ -142,9 +142,21 @@ GH_USER=oxpoe GH_REPO=lazyrun ./build.sh
 
 ## Roadmap
 
-- v1.1 — edit existing shortcuts, detect binaries in `$PATH`, optional symlink
-  instead of a Desktop copy, import/export, dark mode.
-- v1.2 — Firefox PWA via `--kiosk`, Flatpak/Snap targets, icon preview.
+- Edit existing shortcuts, detect binaries in `$PATH`, optional symlink instead of a
+  Desktop copy, import/export, dark mode.
+- Firefox PWA via `--kiosk`, Flatpak/Snap targets, icon preview.
+
+Known limitations are tracked as [issues](https://github.com/oxpoe/lazyrun/issues);
+the main ones:
+
+- the type label (`Go`, `Electron`, …) is detected when the shortcut is created, so a
+  binary replaced by hand keeps its old label until it is reinstalled;
+- the update check runs while the app is open (startup + every 4 hours), there is no
+  background service, and updates are offered, never forced;
+- online icon search uses Iconify plus the icons a website itself provides
+  (manifest / touch icon / favicon) — there is no image-search scraping;
+- `Electron` detection uses the `resources/*.asar` marker, so Chromium-based apps
+  (Vivaldi, Helium, …) show up as `Binary`.
 
 ## Disclaimer / Catatan
 
