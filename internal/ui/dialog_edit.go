@@ -100,9 +100,6 @@ func (ui *app) showEditDialog(sc store.Shortcut) {
 	desktopChk.SetChecked(sc.Targets.Desktop)
 	terminal := widget.NewCheck(T("check_terminal"), nil)
 	terminal.SetChecked(sc.Terminal)
-	if sc.Kind != shortcut.KindScript {
-		terminal.Hide()
-	}
 
 	browseIcon := newButton(T("browse"), theme.FolderOpenIcon(), T("tip_browse"), widget.MediumImportance, func() {
 		pickFile(ui.win, imageFilter, func(path string) {
@@ -123,12 +120,7 @@ func (ui *app) showEditDialog(sc store.Shortcut) {
 		pickFile(ui.win, nil, func(path string) {
 			binPath = path
 			binLabel.SetText(filepath.Base(path) + " · " + detectedKind(path))
-			if shortcut.DetectKind(path) == shortcut.KindScript {
-				terminal.Show()
-			} else {
-				terminal.SetChecked(false)
-				terminal.Hide()
-			}
+			terminal.SetChecked(shortcut.RunsInTerminal(path))
 		})
 	})
 	category := widget.NewSelect(categories, nil)
@@ -220,6 +212,12 @@ func (ui *app) showEditDialog(sc store.Shortcut) {
 	})
 
 	hint := textLine(T("edit_hint"), 12, false, colorNameMuted)
+
+	// beberapa entri lama belum menyalakan Terminal walau aplikasinya CLI/TUI
+	terminalSuggest := container.NewVBox()
+	if !sc.Terminal && shortcut.RunsInTerminal(sc.BinaryPath) {
+		terminalSuggest.Add(textLine(T("terminal_suggest"), 12, false, colorNameChipDesk))
+	}
 	content := container.NewVScroll(container.NewVBox(
 		closeRow(func() { d.Hide() }),
 		widget.NewForm(items...),
@@ -228,6 +226,7 @@ func (ui *app) showEditDialog(sc store.Shortcut) {
 		menu,
 		desktopChk,
 		terminal,
+		terminalSuggest,
 		hint,
 		container.NewHBox(logoBox(newLogo(), 20), spacer(),
 			newButton(T("cancel"), nil, T("tip_cancel"), widget.MediumImportance, func() { d.Hide() }),

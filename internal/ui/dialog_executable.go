@@ -41,19 +41,14 @@ func (ui *app) showExecutableDialog() {
 	desktop := widget.NewCheck(T("check_desktop"), nil)
 	desktop.SetChecked(true)
 	terminal := widget.NewCheck(T("check_terminal"), nil)
-	terminal.Hide() // hanya relevan untuk script
 
 	browseBin := newButton(T("browse"), theme.FolderOpenIcon(), T("tip_browse"), widget.MediumImportance, func() {
 		pickFile(ui.win, nil, func(path string) {
 			binPath = path
 			binLabel.SetText(filepath.Base(path) + " · " + detectedKind(path))
-			// terminal hanya perlu untuk script; tampilkan kalau terdeteksi
-			if shortcut.DetectKind(path) == shortcut.KindScript {
-				terminal.Show()
-			} else {
-				terminal.SetChecked(false)
-				terminal.Hide()
-			}
+			// aplikasi terminal (TUI/CLI/script) perlu Terminal=true;
+			// tebakannya dari library yang dipakai binary
+			terminal.SetChecked(shortcut.RunsInTerminal(path))
 			if strings.TrimSpace(nameEntry.Text) == "" {
 				nameEntry.SetText(appNameFromFile(path))
 			}

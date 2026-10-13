@@ -299,3 +299,49 @@ func TestScriptWrapperPrefersOriginalFile(t *testing.T) {
 		t.Errorf("wrapper tidak menyiapkan PATH:\n%s", text)
 	}
 }
+
+func TestInstallCLIAppGetsTerminalEntry(t *testing.T) {
+	testEnv(t)
+	// pakai binary tes ini sendiri: ELF asli tanpa library GUI
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := self
+
+	// binary tanpa library GUI -> dianggap aplikasi terminal
+	terminal := RunsInTerminal(src)
+	if !terminal {
+		t.Fatal("binary CLI harus terdeteksi butuh terminal")
+	}
+
+	sc, err := InstallExecutable(ExecOptions{BinaryPath: src, Name: "TUI Tool", Menu: true, Terminal: terminal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(sc.DesktopPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "Terminal=true\n") {
+		t.Errorf("aplikasi CLI harus Terminal=true:\n%s", content)
+	}
+}
+
+func TestInstallGUIAppKeepsTerminalFalse(t *testing.T) {
+	home := testEnv(t)
+	src := fakeBinary(t, home, "gui-tool")
+
+	// simulasi aplikasi GUI: tidak butuh terminal
+	sc, err := InstallExecutable(ExecOptions{BinaryPath: src, Name: "GUI Tool", Menu: true, Terminal: false})
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(sc.DesktopPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "Terminal=false\n") {
+		t.Errorf("aplikasi GUI tidak boleh membuka terminal:\n%s", content)
+	}
+}

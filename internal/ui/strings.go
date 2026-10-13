@@ -49,7 +49,8 @@ var tr = map[string][2]string{
 	"section_location": {"Shortcut location", "Lokasi shortcut"},
 	"check_menu":       {"Application menu", "Menu aplikasi"},
 	"check_desktop":    {"Desktop", "Desktop"},
-	"check_terminal":   {"Run in a terminal window (scripts)", "Jalankan di jendela terminal (script)"},
+	"check_terminal":   {"Run in a terminal window (CLI/TUI apps)", "Jalankan di jendela terminal (aplikasi CLI/TUI)"},
+	"terminal_suggest": {"This looks like a terminal app - tick the box above if it closes right away.", "Ini kelihatan aplikasi terminal - centang kotak di atas kalau menutup begitu saja."},
 	"exec_hint":        {"The binary is copied to ~/.local/bin and can be uninstalled from the list.", "Binary disalin ke ~/.local/bin dan bisa dihapus lagi dari daftar."},
 	"web_hint":         {"The icon comes from the site's favicon, or is looked up online if there is none.", "Ikon diambil dari favicon situs, atau dicari otomatis di internet kalau tidak ada."},
 

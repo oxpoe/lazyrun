@@ -30,6 +30,10 @@ breathes while the app is open (the koala in `assets/logo.svg` is the mascot).*
 
 - **Executable shortcut** — picks an ELF/AppImage/script/Windows `.exe`, copies it to
   `~/.local/bin/`, installs the icon, writes the `.desktop` entry.
+- **Terminal apps just work** — CLI/TUI programs (lazydocker, htop, a script) need
+  `Terminal=true`, while GUI apps must not open a terminal. LazyRun guesses this from
+  the libraries the binary links (no GUI library → terminal app), pre-fills the
+  *Run in a terminal window* checkbox, and keeps it editable.
 - **Automatic type label** — every shortcut is tagged with what it actually is,
   detected from the file: `Go`, `AppImage`, `Electron`, `Script`, `Windows`, `Binary`
   (`.exe` files are launched through `wine`), or `PWA` for web apps.
