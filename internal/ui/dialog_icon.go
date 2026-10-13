@@ -97,7 +97,7 @@ func (ui *app) showIconSearch(query string, onPick func(icon.Result, []byte)) {
 		results,
 	)
 
-	d = dialog.NewCustom(T("icon_search_title"), "", content, ui.win)
+	d = dialog.NewCustomWithoutButtons(T("icon_search_title"), content, ui.win)
 	showDialog(d, ui.win, 560, 470) // sekaligus menampilkan dialog
 	search()
 }
@@ -129,12 +129,9 @@ func (ui *app) iconChoice(result icon.Result, onPick func(icon.Result, []byte), 
 		if err != nil {
 			return
 		}
-		thumb, err := icon.Rasterize(downloaded, 64)
+		thumb, err := icon.ToPNG(downloaded)
 		if err != nil {
-			if icon.Ext(downloaded) == ".svg" {
-				return
-			}
-			thumb = downloaded // PNG/JPEG bisa langsung dipakai
+			return // placeholder tetap tampil
 		}
 
 		mu.Lock()

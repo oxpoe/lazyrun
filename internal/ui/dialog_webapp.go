@@ -118,7 +118,7 @@ func (ui *app) showWebAppDialog() {
 			install),
 	))
 
-	d = dialog.NewCustom(T("new_web_title"), "", content, ui.win)
+	d = dialog.NewCustomWithoutButtons(T("new_web_title"), content, ui.win)
 	showDialog(d, ui.win, 560, 520)
 }
 

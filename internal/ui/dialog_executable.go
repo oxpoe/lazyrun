@@ -22,7 +22,7 @@ var categories = []string{
 }
 
 var (
-	imageFilter = storage.NewExtensionFileFilter([]string{".png", ".svg", ".jpg", ".jpeg", ".xpm", ".ico"})
+	imageFilter = storage.NewExtensionFileFilter([]string{".png", ".svg", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".ico", ".xpm"})
 	stripExts   = []string{".AppImage", ".appimage", ".sh", ".bin", ".run", ".desktop"}
 )
 
@@ -113,7 +113,7 @@ func (ui *app) showExecutableDialog() {
 			install),
 	))
 
-	d = dialog.NewCustom(T("new_exec_title"), "", content, ui.win)
+	d = dialog.NewCustomWithoutButtons(T("new_exec_title"), content, ui.win)
 	showDialog(d, ui.win, 560, 520)
 }
 

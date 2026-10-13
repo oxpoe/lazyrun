@@ -81,11 +81,11 @@ func installIconFor(o iconOptions) (path, source string, err error) {
 	}
 
 	for _, attempt := range attempts {
-		data, ext, err := attempt.load()
+		data, _, err := attempt.load()
 		if err != nil || len(data) == 0 {
 			continue
 		}
-		path, err := icon.SaveBytes(data, ext, o.Slug)
+		path, err := icon.Save(data, o.Slug)
 		if err != nil {
 			continue
 		}
@@ -102,22 +102,21 @@ var errSkipIcon = errors.New("icon source not available")
 // RefreshIcon mengunduh ulang ikon shortcut dari sumber online-nya (sync manual).
 func RefreshIcon(sc store.Shortcut) (string, error) {
 	var data []byte
-	var ext string
 	var err error
 
 	switch {
 	case sc.IconSource == "":
 		return "", errors.New("this icon has no online source")
 	case strings.HasPrefix(sc.IconSource, iconSourceFavicon):
-		data, ext, err = icon.Fetch(strings.TrimPrefix(sc.IconSource, iconSourceFavicon))
+		data, _, err = icon.Fetch(strings.TrimPrefix(sc.IconSource, iconSourceFavicon))
 	case strings.HasPrefix(sc.IconSource, iconSourceSearch):
 		result, ok := icon.Find(strings.TrimPrefix(sc.IconSource, iconSourceSearch))
 		if !ok {
 			return "", errors.New("no matching icon found online anymore")
 		}
-		data, ext, err = icon.FromURL(result.URL)
+		data, _, err = icon.FromURL(result.URL)
 	case strings.HasPrefix(sc.IconSource, "http"):
-		data, ext, err = icon.FromURL(sc.IconSource)
+		data, _, err = icon.FromURL(sc.IconSource)
 	default:
 		return "", errors.New("this icon comes from a local file, not the internet")
 	}
@@ -125,7 +124,7 @@ func RefreshIcon(sc store.Shortcut) (string, error) {
 		return "", err
 	}
 
-	path, err := icon.SaveBytes(data, ext, sc.Slug)
+	path, err := icon.Save(data, sc.Slug)
 	if err != nil {
 		return "", err
 	}

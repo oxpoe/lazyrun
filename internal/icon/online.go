@@ -7,14 +7,30 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 )
 
-var iconifyBase = "https://api.iconify.design"
+var (
+	iconifyMu   sync.RWMutex
+	iconifyBase = "https://api.iconify.design"
+)
 
 // SetSearchEndpoint mengarahkan pencarian ikon ke endpoint lain (dipakai tes).
-func SetSearchEndpoint(base string) { iconifyBase = base }
+func SetSearchEndpoint(base string) {
+	iconifyMu.Lock()
+	defer iconifyMu.Unlock()
+	iconifyBase = base
+}
+
+// searchEndpoint dibaca setiap kali mencari, jadi harus lewat lock
+// (tes bisa mengganti endpoint sementara goroutine lain mencari).
+func searchEndpoint() string {
+	iconifyMu.RLock()
+	defer iconifyMu.RUnlock()
+	return iconifyBase
+}
 
 // Result adalah satu ikon dari pencarian online.
 type Result struct {
@@ -41,7 +57,8 @@ func Search(query string, limit int) ([]Result, error) {
 		limit = 32
 	}
 
-	endpoint := fmt.Sprintf("%s/search?query=%s&limit=%d", iconifyBase, url.QueryEscape(query), limit)
+	base := searchEndpoint()
+	endpoint := fmt.Sprintf("%s/search?query=%s&limit=%d", base, url.QueryEscape(query), limit)
 	data, err := get(endpoint)
 	if err != nil {
 		return nil, err
@@ -63,7 +80,7 @@ func Search(query string, limit int) ([]Result, error) {
 		// height=256 supaya SVG-nya punya ukuran eksplisit (bukan "1em")
 		results = append(results, Result{
 			Name: name,
-			URL:  fmt.Sprintf("%s/%s/%s.svg?height=256", iconifyBase, url.PathEscape(prefix), url.PathEscape(icon)),
+			URL:  fmt.Sprintf("%s/%s/%s.svg?height=256", base, url.PathEscape(prefix), url.PathEscape(icon)),
 		})
 	}
 	if len(results) == 0 {

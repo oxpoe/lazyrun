@@ -2,38 +2,30 @@
 package icon
 
 import (
+	"bytes"
 	"errors"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
+
+	xdraw "golang.org/x/image/draw"
 
 	"lazyrun/assets"
 	"lazyrun/internal/xdg"
 )
 
-var exts = []string{".png", ".svg", ".jpg", ".jpeg", ".xpm"}
-var nearbyNames = []string{"icon", "logo"}
+var exts = []string{".png", ".svg", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".ico", ".xpm"}
 
-// Save memasang ikon untuk shortcut dan mengembalikan path absolutnya.
-// Urutan pilihan: ikon dari user, ikon di folder binary, lalu ikon default LazyRun.
-func Save(userIcon, nearbyDir, nearbyBase, slug string) (string, error) {
-	if userIcon != "" {
-		return fromFile(userIcon, slug)
-	}
-	for _, name := range append([]string{nearbyBase}, nearbyNames...) {
-		if name == "" {
-			continue
-		}
-		if p := findNearby(nearbyDir, name); p != "" {
-			return fromFile(p, slug)
-		}
-	}
-	return Default(slug)
-}
+var pngMagic = []byte("\x89PNG\r\n\x1a\n")
+
+// maxSide adalah sisi terpanjang ikon yang disimpan.
+const maxSide = 512
 
 // Default memasang ikon bawaan LazyRun.
 func Default(slug string) (string, error) {
-	return SaveBytes(assets.Icon, ".png", slug)
+	return Save(assets.Icon, slug)
 }
 
 // Nearby mencari file ikon bernama base.* di folder dir (dipakai untuk auto-deteksi).
@@ -55,48 +47,66 @@ func findNearby(dir, base string) string {
 	return ""
 }
 
-func fromFile(src, slug string) (string, error) {
-	data, err := os.ReadFile(src)
+// Save menulis ikon ke direktori ikon XDG sebagai PNG.
+//
+// Semua format (SVG, webp, gif, bmp, ico, jpeg) dikonversi dulu ke PNG karena
+// desktop environment tidak konsisten membacanya, dan sebagian SVG dari internet
+// punya fitur yang bikin proses menggambar berhenti di UI.
+func Save(data []byte, slug string) (string, error) {
+	converted, err := ToPNG(data)
 	if err != nil {
 		return "", err
-	}
-	ext := strings.ToLower(filepath.Ext(src))
-	// ICO tidak dipakai desktop theme; pakai PNG di dalamnya kalau ada.
-	if ext == ".ico" {
-		png := largestPNGFromICO(data)
-		if png == nil {
-			return "", errors.New("this .ico has no PNG inside it, pick another icon")
-		}
-		return SaveBytes(png, ".png", slug)
-	}
-	return SaveBytes(data, ext, slug)
-}
-
-// SaveBytes menulis data ikon ke direktori ikon XDG.
-// SVG diraster dulu ke PNG: sebagian ikon internet memakai fitur SVG yang membuat
-// proses menggambar berhenti (panic) atau tidak tampil di UI/desktop.
-func SaveBytes(data []byte, ext, slug string) (string, error) {
-	if ext == "" {
-		ext = ".png"
-	}
-	if ext == ".svg" {
-		raster, err := Rasterize(data, 256)
-		if err != nil {
-			return "", err
-		}
-		data, ext = raster, ".png"
 	}
 	if err := os.MkdirAll(xdg.IconsDir(), 0o755); err != nil {
 		return "", err
 	}
-	// shortcut: ikon disimpan apa adanya di hicolor/512x512 tanpa resize;
-	// desktop environment men-skalanya sendiri. Tambah resize kalau ikon kecil terlihat pecah.
-	dest := filepath.Join(xdg.IconsDir(), slug+ext)
-	return dest, os.WriteFile(dest, data, 0o644)
+	dest := filepath.Join(xdg.IconsDir(), slug+".png")
+	return dest, os.WriteFile(dest, converted, 0o644)
 }
 
-// Ext menebak ekstensi file dari isi data (dipakai untuk ikon yang sudah diunduh UI).
+// Ext menebak ekstensi file dari isi data.
 func Ext(data []byte) string { return sniffExt(data) }
 
 // IconBytes adalah ikon default LazyRun.
 func IconBytes() []byte { return assets.Icon }
+
+// ToPNG mengubah data gambar apa pun yang didukung menjadi PNG.
+// Data yang sudah PNG dikembalikan apa adanya.
+func ToPNG(data []byte) ([]byte, error) {
+	if bytes.HasPrefix(data, pngMagic) {
+		return data, nil
+	}
+
+	if sniffExt(data) == ".svg" {
+		return Rasterize(data, 256)
+	}
+
+	// jpeg, gif, bmp, webp dikenali dari isi file
+	if img, _, err := image.Decode(bytes.NewReader(data)); err == nil {
+		return encodePNG(img)
+	}
+
+	// ico bisa berisi PNG langsung
+	if png := largestPNGFromICO(data); png != nil {
+		return png, nil
+	}
+	return nil, errors.New("format ikon tidak didukung")
+}
+
+// encodePNG menulis gambar jadi PNG, diperkecil kalau lebih besar dari maxSide.
+func encodePNG(img image.Image) ([]byte, error) {
+	bounds := img.Bounds()
+	if bounds.Dx() > maxSide || bounds.Dy() > maxSide {
+		scale := float64(maxSide) / float64(max(bounds.Dx(), bounds.Dy()))
+		size := image.Rect(0, 0, int(float64(bounds.Dx())*scale), int(float64(bounds.Dy())*scale))
+		scaled := image.NewNRGBA(size)
+		xdraw.CatmullRom.Scale(scaled, size, img, bounds, xdraw.Over, nil)
+		img = scaled
+	}
+
+	var out bytes.Buffer
+	if err := png.Encode(&out, img); err != nil {
+		return nil, err
+	}
+	return out.Bytes(), nil
+}
