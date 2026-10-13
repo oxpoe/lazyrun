@@ -121,6 +121,8 @@ case "$PATH" in *".local/bin"*) echo "path ok";; *) echo "path hilang";; esac
 	if !strings.Contains(string(out), "path ok") {
 		t.Errorf("PATH tidak disiapkan wrapper: %s", out)
 	}
+	// script asli di folder asalnya masih ada di mesin ini? bukan di sini,
+	// jadi wrapper memakai salinannya (sudah diuji lewat 'data ok' di atas)
 
 	// binary biasa hasil restore juga harus executable
 	tool := restored["Tool"]

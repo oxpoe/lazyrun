@@ -267,3 +267,35 @@ func TestUninstallKeepsBinaryByDefault(t *testing.T) {
 		t.Errorf("binary harus tetap ada: %v", err)
 	}
 }
+
+func TestScriptWrapperPrefersOriginalFile(t *testing.T) {
+	home := testEnv(t)
+	dir := filepath.Join(home, "proyek")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	src := filepath.Join(dir, "bench.sh")
+	if err := os.WriteFile(src, []byte("#!/bin/sh\necho asli \"$(pwd)\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	sc, err := InstallExecutable(ExecOptions{BinaryPath: src, Name: "Bench", Menu: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wrapper, err := os.ReadFile(sc.BinaryPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(wrapper)
+	if !strings.Contains(text, shellQuote(src)) {
+		t.Errorf("wrapper tidak memakai script asli:\n%s", text)
+	}
+	if !strings.Contains(text, shellQuote(dir)) {
+		t.Errorf("wrapper tidak cd ke folder asli:\n%s", text)
+	}
+	if !strings.Contains(text, "PATH=\"$HOME/.local/bin:$PATH\"") {
+		t.Errorf("wrapper tidak menyiapkan PATH:\n%s", text)
+	}
+}

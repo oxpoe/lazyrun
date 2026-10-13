@@ -36,7 +36,10 @@ breathes while the app is open (the koala in `assets/logo.svg` is the mascot).*
 - **Scripts run properly** — the desktop environment starts programs with your home as
   the working directory and the session `PATH`, which breaks scripts that use relative
   paths or tools from `~/.local/bin`. LazyRun therefore installs a tiny wrapper that
-  fixes both (and can open the script in a terminal window when you tick that option).
+  fixes both, running the original script file when it is still there (so `dirname $0`
+  keeps pointing at its own folder). *Run* in the list launches through
+  `gio launch <desktop file>`, so `Terminal=true` and `Path=` behave exactly like the
+  desktop menu — handy for scripts that ask for input or need `sudo`.
 - **Web app shortcut** — opens the URL as an app: `--app=<url>` for
   Chromium-based browsers (Chrome, Chromium, Brave, Edge, Vivaldi, Helium,
   including Flatpak builds), `--new-window` for Firefox.

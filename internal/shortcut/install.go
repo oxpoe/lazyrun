@@ -117,7 +117,7 @@ func installBinary(kind, src, binDst string) error {
 		if err := copyFile(src, binDst+scriptSuffix, 0o755); err != nil {
 			return err
 		}
-		return writeScriptWrapper(binDst, binDst+scriptSuffix, filepath.Dir(src))
+		return writeScriptWrapper(binDst, binDst+scriptSuffix, src)
 	}
 	if samePath(src, binDst) {
 		return nil
@@ -137,15 +137,25 @@ func writeFileMode(path string, data []byte, mode os.FileMode) error {
 const scriptSuffix = ".real"
 
 // writeScriptWrapper menulis wrapper yang menyiapkan PATH dan folder kerja
-// sebelum menjalankan script aslinya.
-func writeScriptWrapper(path, real, originDir string) error {
+// sebelum menjalankan script.
+//
+// Script asli di folder asalnya dipakai lebih dulu kalau masih ada (supaya
+// `dirname $0` dan berkas di sebelahnya tetap mengarah ke sana); salinan di
+// ~/.local/bin jadi cadangan kalau script aslinya sudah pindah/dihapus.
+func writeScriptWrapper(path, real, originFile string) error {
 	body := "#!/bin/sh\n" +
-		"# dibuat oleh LazyRun: siapkan PATH & folder kerja lalu jalankan script aslinya\n" +
+		"# dibuat oleh LazyRun: siapkan PATH & folder kerja lalu jalankan script\n" +
 		`PATH="$HOME/.local/bin:$PATH"` + "\n" +
 		"export PATH\n"
-	if originDir != "" && originDir != "." {
+
+	originDir := filepath.Dir(originFile)
+	if originDir != "" && originDir != "." && originDir != "/" {
 		quoted := shellQuote(originDir)
 		body += "if [ -d " + quoted + " ]; then cd " + quoted + " || exit 1; fi\n"
+	}
+
+	if originFile != "" && originFile != real {
+		body += "if [ -f " + shellQuote(originFile) + " ]; then exec " + shellQuote(originFile) + ` "$@"; fi` + "\n"
 	}
 	body += "exec " + shellQuote(real) + ` "$@"` + "\n"
 	return os.WriteFile(path, []byte(body), 0o755)

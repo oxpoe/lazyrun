@@ -108,7 +108,11 @@ func restoreBinary(restored *store.Shortcut, slug string, binary []byte) error {
 		if err := os.Rename(binDst, binDst+scriptSuffix); err != nil {
 			return err
 		}
-		if err := writeScriptWrapper(binDst, binDst+scriptSuffix, originDir); err != nil {
+		originFile := ""
+		if originDir != "" {
+			originFile = filepath.Join(originDir, filepath.Base(restored.BinaryPath))
+		}
+		if err := writeScriptWrapper(binDst, binDst+scriptSuffix, originFile); err != nil {
 			return err
 		}
 	}
