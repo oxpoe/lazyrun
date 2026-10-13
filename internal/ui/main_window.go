@@ -24,14 +24,15 @@ import (
 )
 
 type app struct {
-	win      fyne.Window
-	store    *store.Store
-	browsers []browser.Browser
-	rows     *fyne.Container
-	cards    map[string]*hoverCard
-	icons    *iconCache
-	count    *canvas.Text // angka jumlah shortcut di header daftar
-	version  string
+	win         fyne.Window
+	store       *store.Store
+	browsers    []browser.Browser
+	rows        *fyne.Container
+	cards       map[string]*hoverCard
+	icons       *iconCache
+	count       *canvas.Text // angka jumlah shortcut di header daftar
+	versionText *canvas.Text // versi di footer; berubah kalau ada update
+	version     string
 }
 
 // Run menampilkan window utama LazyRun sampai user menutupnya.
@@ -60,6 +61,7 @@ func build(a fyne.App, version string) (*app, error) {
 	ui.count = count
 	ui.win = a.NewWindow(T("app_title"))
 	ui.win.Resize(fyne.NewSize(840, 600))
+	ui.versionText = caption("LazyRun v" + version + " · oxpoe")
 
 	st, err := store.Load(xdg.MetadataPath())
 	ui.store = st
@@ -82,7 +84,7 @@ func build(a fyne.App, version string) (*app, error) {
 	footer := container.NewBorder(
 		widget.NewSeparator(), nil,
 		container.NewHBox(update, github, donate),
-		caption("LazyRun v"+version+" · oxpoe"),
+		ui.versionText,
 	)
 
 	accent := accentBar()

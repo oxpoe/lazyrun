@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -15,15 +16,45 @@ import (
 	"lazyrun/internal/update"
 )
 
+// recheckInterval adalah jeda pemeriksaan update berkala selama aplikasi terbuka.
+const recheckInterval = 4 * time.Hour
+
+// appImagePath mengembalikan lokasi AppImage yang sedang dipakai.
+// $APPIMAGE dipakai kalau ada; kalau tidak (mis. dijalankan lewat wrapper),
+// berkas executable-nya sendiri diperiksa apakah benar AppImage.
+func appImagePath() string {
+	if path := os.Getenv("APPIMAGE"); path != "" {
+		return path
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+		exe = resolved
+	}
+	if update.IsAppImage(exe) {
+		return exe
+	}
+	return ""
+}
+
 // checkUpdates dipanggil tombol footer: hasilnya selalu diberitahukan.
 func (ui *app) checkUpdates() { ui.checkForUpdate(true) }
 
-// scheduleUpdateCheck memeriksa rilis terbaru beberapa saat setelah aplikasi tampil.
+// scheduleUpdateCheck memeriksa rilis terbaru setelah aplikasi tampil,
+// lalu mengulanginya berkala selama aplikasi terbuka.
 func (ui *app) scheduleUpdateCheck() {
-	if os.Getenv("APPIMAGE") == "" {
-		return // dijalankan dari source: jangan ganggu dengan cek update
+	if appImagePath() == "" {
+		return // dijalankan dari source / hasil ekstrak: tidak bisa memasang update
 	}
 	time.AfterFunc(2*time.Second, func() { ui.checkForUpdate(false) })
+	ticker := time.NewTicker(recheckInterval)
+	go func() {
+		for range ticker.C {
+			ui.checkForUpdate(false)
+		}
+	}()
 }
 
 // checkForUpdate mengambil rilis terbaru dari GitHub. manual=false hanya
@@ -45,12 +76,23 @@ func (ui *app) checkForUpdate(manual bool) {
 					dialog.ShowError(err, ui.win)
 				}
 			case update.Newer(ui.version, rel):
+				ui.markUpdatePending(rel)
 				ui.showUpdateDialog(rel)
 			case manual:
 				dialog.ShowInformation(T("check_updates"), fmt.Sprintf(T("up_to_date"), ui.version), ui.win)
 			}
 		})
 	}()
+}
+
+// markUpdatePending menampilkan versi baru di footer, jadi tetap terlihat
+// walau dialognya ditutup dengan "Nanti".
+func (ui *app) markUpdatePending(rel update.Release) {
+	if ui.versionText == nil {
+		return
+	}
+	ui.versionText.Text = fmt.Sprintf("v%s → v%s", ui.version, rel.Version)
+	ui.versionText.Refresh()
 }
 
 // showUpdateDialog menawarkan update: unduh sekarang, buka halaman rilis, atau nanti.
@@ -91,7 +133,7 @@ func (ui *app) showUpdateDialog(rel update.Release) {
 
 // updaterBinary mengembalikan path AppImageUpdate kalau terpasang.
 func (ui *app) updaterBinary() string {
-	if os.Getenv("APPIMAGE") == "" {
+	if appImagePath() == "" {
 		return ""
 	}
 	path, err := exec.LookPath("AppImageUpdate")
@@ -103,7 +145,7 @@ func (ui *app) updaterBinary() string {
 
 // downloadUpdate mengunduh AppImage terbaru dan menukarnya dengan yang sedang dipakai.
 func (ui *app) downloadUpdate(rel update.Release) {
-	appImage := os.Getenv("APPIMAGE")
+	appImage := appImagePath()
 	if appImage == "" {
 		ui.openURL(rel.PageURL)
 		return
@@ -126,10 +168,16 @@ func (ui *app) downloadUpdate(rel update.Release) {
 
 // runUpdater memakai AppImageUpdate untuk memasang update (pakai zsync, unduhannya kecil).
 func (ui *app) runUpdater(updater string, rel update.Release) {
+	appImage := appImagePath()
+	if appImage == "" {
+		ui.openURL(rel.PageURL)
+		return
+	}
+
 	progress := dialog.NewProgressInfinite(T("check_updates"), T("update_downloading"), ui.win)
 	progress.Show()
 	go func() {
-		err := exec.Command(updater, os.Getenv("APPIMAGE")).Run()
+		err := exec.Command(updater, appImage).Run()
 		fyne.Do(func() {
 			progress.Hide()
 			if err != nil {
@@ -157,7 +205,7 @@ func (ui *app) offerRestart() {
 
 // restart menjalankan AppImage yang baru lalu menutup proses lama.
 func (ui *app) restart() {
-	appImage := os.Getenv("APPIMAGE")
+	appImage := appImagePath()
 	if appImage == "" {
 		return
 	}
