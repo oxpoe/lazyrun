@@ -78,7 +78,7 @@ func chipLabel(text string, bg fyne.ThemeColorName) (fyne.CanvasObject, *canvas.
 
 // accentBar adalah garis gradien brand di bawah header.
 func accentBar() *canvas.LinearGradient {
-	bar := canvas.NewLinearGradient(brandIndigo, brandCyan, 90)
+	bar := canvas.NewLinearGradient(brandAmber, brandMagenta, 90)
 	bar.SetMinSize(fyne.NewSize(0, 3))
 	return bar
 }

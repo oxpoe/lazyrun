@@ -10,6 +10,9 @@ Desktop app (Go + Fyne) that creates application shortcuts on Linux in a few cli
 from an executable file, or from a web URL as a PWA. Ships as a single-file
 AppImage, no terminal needed.
 
+*Dream-sky theme: night violet, dusk pink and a moon-coloured accent that subtly
+breathes while the app is open (the koala in `assets/logo.svg` is the mascot).*
+
 ![LazyRun main window](docs/main-dark.png)
 
 <p align="center">

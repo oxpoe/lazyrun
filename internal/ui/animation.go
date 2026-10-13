@@ -17,7 +17,7 @@ import (
 
 // pulseGradient membuat garis aksen bergerak bolak-balik antara indigo dan cyan.
 func pulseGradient(bar *canvas.LinearGradient) {
-	anim := canvas.NewColorRGBAAnimation(brandIndigo, brandCyan, 3*time.Second, func(c color.Color) {
+	anim := canvas.NewColorRGBAAnimation(brandAmber, brandMagenta, 3*time.Second, func(c color.Color) {
 		bar.EndColor = c
 		canvas.Refresh(bar)
 	})

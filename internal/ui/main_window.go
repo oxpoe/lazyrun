@@ -32,6 +32,7 @@ type app struct {
 	icons       *iconCache
 	count       *canvas.Text // angka jumlah shortcut di header daftar
 	versionText *canvas.Text // versi di footer; berubah kalau ada update
+	accent      *canvas.LinearGradient
 	version     string
 }
 
@@ -87,9 +88,9 @@ func build(a fyne.App, version string) (*app, error) {
 		ui.versionText,
 	)
 
-	accent := accentBar()
-	pulseGradient(accent)
-	top := container.NewVBox(header, accent,
+	ui.accent = accentBar()
+	pulseGradient(ui.accent)
+	top := container.NewVBox(header, ui.accent,
 		container.NewHBox(sectionLabel(T("installed")), countChip))
 	body := container.NewBorder(
 		top,

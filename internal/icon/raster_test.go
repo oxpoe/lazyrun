@@ -76,9 +76,9 @@ func TestRasterizeColorsCurrentColorIcons(t *testing.T) {
 	if a == 0 {
 		t.Fatal("ikon currentColor tidak terwarnai (transparan)")
 	}
-	// brand indigo #4F46E5: biru > merah > hijau
-	if !(b > r && r > g) {
-		t.Errorf("warna pengganti bukan brand indigo: r=%d g=%d b=%d", r>>8, g>>8, b>>8)
+	// brand dusk pink #C25C9E: merah > biru > hijau
+	if !(r > b && b > g) {
+		t.Errorf("warna pengganti bukan warna brand: r=%d g=%d b=%d", r>>8, g>>8, b>>8)
 	}
 }
 

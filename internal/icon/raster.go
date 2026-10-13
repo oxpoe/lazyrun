@@ -11,8 +11,9 @@ import (
 	"github.com/srwiley/rasterx"
 )
 
-// currentColor diisi ke SVG yang memakai fill="currentColor".
-const currentColor = "#4f46e5"
+// currentColor diisi ke SVG yang memakai fill="currentColor"
+// (warna brand: dusk pink, terlihat di background terang maupun gelap).
+const currentColor = "#c25c9e"
 
 // Rasterize mengubah SVG menjadi PNG persegi `size`x`size`.
 //
