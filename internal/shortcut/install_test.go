@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"lazyrun/internal/icon"
 	"lazyrun/internal/store"
 )
 
@@ -22,6 +23,8 @@ func testEnv(t *testing.T) string {
 	t.Setenv("XDG_DATA_HOME", "")
 	t.Setenv("XDG_CONFIG_HOME", "")
 	t.Setenv("PATH", "")
+	// tes tidak boleh menyentuh internet: arahkan pencarian ikon ke port mati
+	icon.SetSearchEndpoint("http://127.0.0.1:1")
 	return home
 }
 

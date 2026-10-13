@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -138,6 +139,9 @@ func (ui *app) row(sc store.Shortcut) *hoverCard {
 
 	actions := container.NewHBox(chips...)
 	actions.Add(iconButton(theme.MediaPlayIcon(), func() { ui.launch(sc) }))
+	if syncable(sc) {
+		actions.Add(iconButton(theme.ViewRefreshIcon(), func() { ui.syncIcon(sc) }))
+	}
 	actions.Add(iconButton(theme.FolderOpenIcon(), func() {
 		if err := exec.Command("xdg-open", filepath.Dir(sc.DesktopPath)).Start(); err != nil {
 			dialog.ShowError(err, ui.win)
@@ -190,6 +194,40 @@ func (ui *app) flashCards() {
 		}
 		card.flash(time.Duration(min(i, 6)) * 70 * time.Millisecond)
 	}
+}
+
+// syncable berarti ikon shortcut punya sumber online yang bisa diunduh ulang.
+func syncable(sc store.Shortcut) bool {
+	source := sc.IconSource
+	return strings.HasPrefix(source, "http") ||
+		strings.HasPrefix(source, "favicon:") ||
+		strings.HasPrefix(source, "search:")
+}
+
+// syncIcon mengunduh ulang ikon shortcut dari sumber online-nya.
+func (ui *app) syncIcon(sc store.Shortcut) {
+	progress := dialog.NewProgressInfinite(T("sync_icon"), T("working"), ui.win)
+	progress.Show()
+	go func() {
+		path, err := shortcut.RefreshIcon(sc)
+		fyne.Do(func() {
+			progress.Hide()
+			if err != nil {
+				dialog.ShowError(err, ui.win)
+				return
+			}
+			if i, ok := ui.store.Get(sc.Slug); ok {
+				ui.store.Items[i].IconPath = path
+				if err := ui.store.Save(); err != nil {
+					dialog.ShowError(err, ui.win)
+				}
+			}
+			ui.reload()
+			if card, ok := ui.cards[sc.Slug]; ok {
+				card.flash(0)
+			}
+		})
+	}()
 }
 
 func (ui *app) confirmDelete(sc store.Shortcut) {

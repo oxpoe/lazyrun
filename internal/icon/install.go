@@ -36,6 +36,14 @@ func Default(slug string) (string, error) {
 	return SaveBytes(assets.Icon, ".png", slug)
 }
 
+// Nearby mencari file ikon bernama base.* di folder dir (dipakai untuk auto-deteksi).
+func Nearby(dir, base string) string {
+	if dir == "" || base == "" {
+		return ""
+	}
+	return findNearby(dir, base)
+}
+
 func findNearby(dir, base string) string {
 	base = strings.ToLower(base)
 	for _, ext := range exts {
@@ -76,6 +84,15 @@ func SaveBytes(data []byte, ext, slug string) (string, error) {
 	// desktop environment men-skalanya sendiri. Tambah resize kalau ikon kecil terlihat pecah.
 	dest := filepath.Join(xdg.IconsDir(), slug+ext)
 	return dest, os.WriteFile(dest, data, 0o644)
+}
+
+// SaveData menyimpan ikon yang sudah ada di memori (mis. hasil pencarian online).
+func SaveData(data []byte, slug string) (string, error) {
+	ext := sniffExt(data)
+	if ext == "" {
+		return "", errors.New("unsupported icon format")
+	}
+	return SaveBytes(data, ext, slug)
 }
 
 // IconBytes adalah ikon default LazyRun.

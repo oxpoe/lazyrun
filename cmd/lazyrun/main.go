@@ -3,6 +3,7 @@ package main
 import (
 	"fyne.io/fyne/v2/app"
 
+	"lazyrun/internal/cursor"
 	"lazyrun/internal/ui"
 )
 
@@ -10,5 +11,6 @@ import (
 var version = "dev"
 
 func main() {
+	cursor.Apply() // sebelum app dibuat: GLFW membaca env cursor saat init
 	ui.Run(app.NewWithID("io.github.lazyrun.LazyRun"), version)
 }

@@ -12,6 +12,12 @@ AppImage, no terminal needed.
 - **Web app shortcut** — opens the URL as an app: `--app=<url>` for
   Chromium-based browsers (Chrome, Chromium, Brave, Edge, Vivaldi, Helium,
   including Flatpak builds), `--new-window` for Firefox.
+- **Icons** — three ways: pick a file, search an online icon library
+  ([Iconify](https://iconify.design), with the app name as the query), or let LazyRun
+  do it automatically: a nearby image file, the site's favicon (including high
+  resolution icons from the web app manifest), or a brand icon matched by name.
+  Every downloaded icon remembers its source, so the *sync icon* button in the list
+  can fetch it again later.
 - **Shortcut location** — checkbox for *Application menu* and/or *Desktop*,
   at least one is required. Desktop-only entries are written with
   `NoDisplay=true` so they do not show up in the menu.
@@ -23,6 +29,9 @@ AppImage, no terminal needed.
 - **i18n** — UI in English or Indonesian, chosen from `$LANG`.
 - **Self update** — AppImage with embedded zsync update information, optional
   `AppImageUpdate` integration via *Check for Updates*.
+- **Desktop integration** — uses the host cursor theme (KDE/GNOME setting is
+  forwarded to the toolkit when the session does not export it), live desktop
+  menu refresh via `update-desktop-database` and `kbuildsycoca`.
 
 ## Install
 

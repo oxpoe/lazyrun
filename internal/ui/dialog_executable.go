@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"lazyrun/internal/icon"
 	"lazyrun/internal/shortcut"
 	"lazyrun/internal/store"
 )
@@ -26,7 +27,8 @@ var (
 )
 
 func (ui *app) showExecutableDialog() {
-	var binPath, iconPath string
+	var binPath, iconPath, iconURL string
+	var iconData []byte
 
 	binLabel := muted(T("none"))
 	iconLabel := muted(T("icon_auto"))
@@ -50,8 +52,14 @@ func (ui *app) showExecutableDialog() {
 	})
 	browseIcon := widget.NewButtonWithIcon(T("browse"), theme.FolderOpenIcon(), func() {
 		pickFile(ui.win, imageFilter, func(path string) {
-			iconPath = path
+			iconPath, iconURL, iconData = path, "", nil
 			iconLabel.SetText(filepath.Base(path))
+		})
+	})
+	onlineIcon := widget.NewButtonWithIcon(T("online"), theme.SearchIcon(), func() {
+		ui.showIconSearch(nameEntry.Text, func(result icon.Result, data []byte) {
+			iconURL, iconPath, iconData = result.URL, "", data
+			iconLabel.SetText(result.Name)
 		})
 	})
 
@@ -71,6 +79,8 @@ func (ui *app) showExecutableDialog() {
 		opts := shortcut.ExecOptions{
 			BinaryPath: binPath,
 			IconPath:   iconPath,
+			IconURL:    iconURL,
+			IconData:   iconData,
 			Name:       nameEntry.Text,
 			Category:   category.Selected,
 			Menu:       menu.Checked,
@@ -85,7 +95,8 @@ func (ui *app) showExecutableDialog() {
 
 	form := widget.NewForm(
 		widget.NewFormItem(T("field_binary"), container.NewBorder(nil, nil, nil, browseBin, binLabel)),
-		widget.NewFormItem(T("field_icon"), container.NewBorder(nil, nil, nil, browseIcon, iconLabel)),
+		widget.NewFormItem(T("field_icon"), container.NewBorder(nil, nil, nil,
+			container.NewHBox(onlineIcon, browseIcon), iconLabel)),
 		widget.NewFormItem(T("field_name"), nameEntry),
 		widget.NewFormItem(T("field_category"), category),
 	)

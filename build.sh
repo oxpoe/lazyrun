@@ -46,6 +46,8 @@ else
 	export LDAI_NO_APPSTREAM=1
 fi
 
+# Library X11/Wayland/xkb/cursor tidak boleh ikut dibundel: kalau versinya beda
+# dengan host, cursor & rendering jadi tidak native (mis. cursor theme desktop tidak terpakai).
 echo "==> bundle + package AppImage"
 # hapus output lama dulu: file yang sedang dijalankan tidak bisa ditimpa langsung
 rm -f "$OUT"/lazyrun-*.AppImage "$OUT"/lazyrun-*.AppImage.zsync
@@ -53,6 +55,10 @@ rm -f "$OUT"/lazyrun-*.AppImage "$OUT"/lazyrun-*.AppImage.zsync
 	--appdir "$APPDIR" \
 	--desktop-file "$APPDIR/lazyrun.desktop" \
 	--icon-file "$APPDIR/lazyrun.png" \
+	--exclude-library "libwayland-*.so*" \
+	--exclude-library "libX*.so*" \
+	--exclude-library "libxkbcommon.so*" \
+	--exclude-library "libffi.so*" \
 	--output appimage
 
 ls -lh "$OUT"/lazyrun-*.AppImage* 2>/dev/null || true

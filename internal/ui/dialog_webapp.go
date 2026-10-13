@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"lazyrun/internal/browser"
+	"lazyrun/internal/icon"
 	"lazyrun/internal/shortcut"
 	"lazyrun/internal/store"
 )
@@ -22,7 +23,8 @@ func (ui *app) showWebAppDialog() {
 		return
 	}
 
-	var iconPath string
+	var iconPath, iconURL string
+	var iconData []byte
 	var nameTouched, filling bool
 
 	urlEntry := widget.NewEntry()
@@ -55,8 +57,14 @@ func (ui *app) showWebAppDialog() {
 
 	browseIcon := widget.NewButtonWithIcon(T("browse"), theme.FolderOpenIcon(), func() {
 		pickFile(ui.win, imageFilter, func(path string) {
-			iconPath = path
+			iconPath, iconURL, iconData = path, "", nil
 			iconLabel.SetText(filepath.Base(path))
+		})
+	})
+	onlineIcon := widget.NewButtonWithIcon(T("online"), theme.SearchIcon(), func() {
+		ui.showIconSearch(nameEntry.Text, func(result icon.Result, data []byte) {
+			iconURL, iconPath, iconData = result.URL, "", data
+			iconLabel.SetText(result.Name)
 		})
 	})
 
@@ -79,6 +87,8 @@ func (ui *app) showWebAppDialog() {
 			Name:     nameEntry.Text,
 			Browser:  shortcut.BrowserArg{Name: b.Name, Exec: b.Exec, Firefox: b.Kind == browser.Firefox},
 			IconPath: iconPath,
+			IconURL:  iconURL,
+			IconData: iconData,
 			Menu:     menu.Checked,
 			Desktop:  desktop.Checked,
 		}
@@ -93,7 +103,8 @@ func (ui *app) showWebAppDialog() {
 		widget.NewFormItem(T("field_url"), urlEntry),
 		widget.NewFormItem(T("field_name"), nameEntry),
 		widget.NewFormItem(T("field_browser"), picker),
-		widget.NewFormItem(T("field_icon"), container.NewBorder(nil, nil, nil, browseIcon, iconLabel)),
+		widget.NewFormItem(T("field_icon"), container.NewBorder(nil, nil, nil,
+			container.NewHBox(onlineIcon, browseIcon), iconLabel)),
 	)
 	content := container.NewVBox(
 		form,

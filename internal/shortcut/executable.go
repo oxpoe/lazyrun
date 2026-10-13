@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"lazyrun/internal/icon"
 	"lazyrun/internal/store"
 	"lazyrun/internal/xdg"
 )
@@ -17,7 +16,9 @@ import (
 // ExecOptions adalah input Fungsi A: shortcut dari file executable.
 type ExecOptions struct {
 	BinaryPath string
-	IconPath   string // opsional
+	IconPath   string // opsional: file ikon
+	IconURL    string // opsional: URL ikon
+	IconData   []byte // opsional: ikon yang sudah diunduh UI
 	Name       string
 	Category   string
 	Menu       bool
@@ -51,7 +52,15 @@ func InstallExecutable(o ExecOptions) (store.Shortcut, error) {
 			return sc, err
 		}
 	}
-	iconPath, err := icon.Save(o.IconPath, filepath.Dir(o.BinaryPath), strings.TrimSuffix(filepath.Base(o.BinaryPath), filepath.Ext(o.BinaryPath)), sl)
+	iconPath, iconSource, err := installIconFor(iconOptions{
+		IconPath:   o.IconPath,
+		IconURL:    o.IconURL,
+		IconData:   o.IconData,
+		NearbyDir:  filepath.Dir(o.BinaryPath),
+		NearbyBase: strings.TrimSuffix(filepath.Base(o.BinaryPath), filepath.Ext(o.BinaryPath)),
+		Query:      name,
+		Slug:       sl,
+	})
 	if err != nil {
 		return sc, err
 	}
@@ -74,6 +83,7 @@ func InstallExecutable(o ExecOptions) (store.Shortcut, error) {
 		ExecArgs:    entry.ExecArgs,
 		BinaryPath:  binDst,
 		IconPath:    iconPath,
+		IconSource:  iconSource,
 		DesktopPath: deskDst,
 		Targets:     store.Targets{Menu: o.Menu, Desktop: o.Desktop},
 		InstalledAt: time.Now().UTC(),
@@ -94,7 +104,9 @@ type WebOptions struct {
 	URL      string
 	Name     string
 	Browser  BrowserArg
-	IconPath string // opsional; kosong = auto-fetch favicon
+	IconPath string // opsional: file ikon
+	IconURL  string // opsional: URL ikon
+	IconData []byte // opsional: ikon yang sudah diunduh UI
 	Menu     bool
 	Desktop  bool
 }
@@ -129,7 +141,14 @@ func InstallWebApp(o WebOptions) (store.Shortcut, error) {
 		return sc, fmt.Errorf("shortcut %q already exists, uninstall it first", name)
 	}
 
-	iconPath, err := installWebIcon(o.IconPath, pageURL, sl)
+	iconPath, iconSource, err := installIconFor(iconOptions{
+		IconPath: o.IconPath,
+		IconURL:  o.IconURL,
+		IconData: o.IconData,
+		PageURL:  pageURL,
+		Query:    name,
+		Slug:     sl,
+	})
 	if err != nil {
 		return sc, err
 	}
@@ -159,6 +178,7 @@ func InstallWebApp(o WebOptions) (store.Shortcut, error) {
 		Browser:     strings.Join(o.Browser.Exec, " "),
 		ExecArgs:    entry.ExecArgs,
 		IconPath:    iconPath,
+		IconSource:  iconSource,
 		DesktopPath: deskDst,
 		Targets:     store.Targets{Menu: o.Menu, Desktop: o.Desktop},
 		InstalledAt: time.Now().UTC(),
@@ -172,16 +192,6 @@ func InstallWebApp(o WebOptions) (store.Shortcut, error) {
 	}
 	go RefreshCache()
 	return sc, nil
-}
-
-func installWebIcon(userIcon, pageURL, slug string) (string, error) {
-	if userIcon != "" {
-		return icon.Save(userIcon, "", "", slug)
-	}
-	if data, ext, err := icon.Fetch(pageURL); err == nil {
-		return icon.SaveBytes(data, ext, slug)
-	}
-	return icon.Default(slug)
 }
 
 func category(c, fallback string) string {

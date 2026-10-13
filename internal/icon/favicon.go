@@ -3,6 +3,7 @@ package icon
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +27,7 @@ var (
 )
 
 // Fetch mengambil favicon dari halaman. Return data + ekstensi file (".png", ".jpg", ".svg").
+// Urutan: ikon dari web app manifest (paling besar) → <link rel=icon> → /favicon.ico.
 func Fetch(pageURL string) ([]byte, string, error) {
 	base, err := url.Parse(pageURL)
 	if err != nil {
@@ -51,6 +53,66 @@ func Fetch(pageURL string) ([]byte, string, error) {
 		lastErr = errors.New("no favicon found")
 	}
 	return nil, "", lastErr
+}
+
+// manifestIcons membaca <link rel=manifest> lalu daftar ikonnya,
+// diurutkan dari ukuran terbesar. Gagal parse bukan error: cukup dilewati.
+func manifestIcons(page *url.URL) []iconCandidate {
+	html, err := get(page.String())
+	if err != nil {
+		return nil
+	}
+	var manifestURL string
+	for _, tag := range linkTag.FindAllString(string(html), -1) {
+		if !strings.Contains(strings.ToLower(attr(relAttr, tag)), "manifest") {
+			continue
+		}
+		if href := attr(hrefAttr, tag); href != "" {
+			if ref, err := url.Parse(href); err == nil {
+				manifestURL = page.ResolveReference(ref).String()
+			}
+			break
+		}
+	}
+	if manifestURL == "" {
+		return nil
+	}
+
+	data, err := get(manifestURL)
+	if err != nil {
+		return nil
+	}
+	var manifest struct {
+		Icons []struct {
+			Src   string `json:"src"`
+			Sizes string `json:"sizes"`
+		} `json:"icons"`
+	}
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil
+	}
+
+	base, err := url.Parse(manifestURL)
+	if err != nil {
+		return nil
+	}
+	var candidates []iconCandidate
+	for _, entry := range manifest.Icons {
+		if entry.Src == "" {
+			continue
+		}
+		ref, err := url.Parse(entry.Src)
+		if err != nil {
+			continue
+		}
+		score := 0
+		if size := attr(sizeAttr, `sizes="`+entry.Sizes+`"`); size != "" {
+			fmt.Sscanf(size, "%d", &score)
+		}
+		candidates = append(candidates, iconCandidate{base.ResolveReference(ref).String(), score})
+	}
+	sort.SliceStable(candidates, func(i, j int) bool { return candidates[i].score > candidates[j].score })
+	return candidates
 }
 
 // iconCandidate adalah kandidat URL ikon dengan skor prioritas.
@@ -90,6 +152,7 @@ func iconCandidates(base *url.URL) []string {
 	}
 
 	sort.SliceStable(found, func(i, j int) bool { return found[i].score > found[j].score })
+	found = append(manifestIcons(base), found...)
 
 	out := make([]string, 0, len(found)+1)
 	seen := map[string]bool{}

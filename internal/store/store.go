@@ -30,6 +30,7 @@ type Shortcut struct {
 	ExecArgs        []string  `json:"exec_args,omitempty"`
 	BinaryPath      string    `json:"binary_path,omitempty"`
 	IconPath        string    `json:"icon_path,omitempty"`
+	IconSource      string    `json:"icon_source,omitempty"`
 	DesktopPath     string    `json:"desktop_path"`
 	DesktopCopyPath string    `json:"desktop_copy_path,omitempty"`
 	Targets         Targets   `json:"targets"`
