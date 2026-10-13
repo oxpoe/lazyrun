@@ -4,6 +4,9 @@ Desktop app (Go + Fyne) that creates application shortcuts on Linux in a few cli
 from an executable file, or from a web URL as a PWA. Ships as a single-file
 AppImage, no terminal needed.
 
+- **Repo:** <https://github.com/oxpoe/lazyrun>
+- **Donate:** <https://donasi.oxpoe.qzz.io/>
+
 - **Executable shortcut** — picks an ELF/AppImage/script, copies it to
   `~/.local/bin/`, installs the icon, writes the `.desktop` entry.
 - **Web app shortcut** — opens the URL as an app: `--app=<url>` for
@@ -23,7 +26,7 @@ AppImage, no terminal needed.
 
 ## Install
 
-Download the AppImage from [Releases](../../releases), then:
+Download the AppImage from [Releases](https://github.com/oxpoe/lazyrun/releases), then:
 
 ```bash
 chmod +x lazyrun-*-x86_64.AppImage

@@ -86,6 +86,19 @@ func TestInstallExecutable(t *testing.T) {
 	}
 }
 
+func TestInstallExecutableStoresExecArgs(t *testing.T) {
+	home := testEnv(t)
+	src := fakeBinary(t, home, "args")
+
+	sc, err := InstallExecutable(ExecOptions{BinaryPath: src, Name: "Args", Menu: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sc.ExecArgs) != 1 || sc.ExecArgs[0] != sc.BinaryPath {
+		t.Errorf("exec_args untuk tombol Open salah: %v", sc.ExecArgs)
+	}
+}
+
 func TestInstallExecutableDesktopOnly(t *testing.T) {
 	home := testEnv(t)
 	src := fakeBinary(t, home, "tool")
@@ -187,6 +200,9 @@ func TestInstallWebAppFirefoxUsesNewWindow(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "Exec=/usr/bin/firefox --new-window https://example.com\n") {
 		t.Errorf("Exec Firefox salah:\n%s", content)
+	}
+	if len(sc.ExecArgs) != 3 || sc.ExecArgs[2] != "https://example.com" {
+		t.Errorf("exec_args PWA salah: %v", sc.ExecArgs)
 	}
 }
 

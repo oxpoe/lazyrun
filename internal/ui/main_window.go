@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
@@ -24,6 +26,7 @@ type app struct {
 	store    *store.Store
 	browsers []browser.Browser
 	rows     *fyne.Container
+	count    *canvas.Text // angka jumlah shortcut di header daftar
 	version  string
 }
 
@@ -46,6 +49,8 @@ func build(a fyne.App, version string) (*app, error) {
 
 	ui.browsers = browser.Detect()
 	ui.rows = container.NewVBox()
+	countChip, count := chipLabel("0", colorNameChipMenu)
+	ui.count = count
 	ui.win = a.NewWindow(T("app_title"))
 	ui.win.Resize(fyne.NewSize(840, 600))
 
@@ -64,13 +69,17 @@ func build(a fyne.App, version string) (*app, error) {
 	header := container.NewBorder(nil, nil, leftHeader, rightHeader)
 
 	update := widget.NewButtonWithIcon(T("check_updates"), theme.DownloadIcon(), ui.checkUpdates)
+	github := widget.NewButton(T("github"), func() { ui.openURL(repoURL) })
+	donate := widget.NewButtonWithIcon(T("donate"),
+		fyne.NewStaticResource("heart.png", assets.Heart), func() { ui.openURL(donateURL) })
 	footer := container.NewBorder(
 		widget.NewSeparator(), nil,
-		update,
+		container.NewHBox(update, github, donate),
 		caption("v"+version),
 	)
 
-	top := container.NewVBox(header, widget.NewSeparator(), sectionLabel(T("installed")))
+	top := container.NewVBox(header, accentBar(),
+		container.NewHBox(sectionLabel(T("installed")), countChip))
 	body := container.NewBorder(
 		top,
 		nil, nil, nil,
@@ -92,6 +101,8 @@ func (ui *app) reload() {
 		ui.store = st
 	}
 	ui.rows.RemoveAll()
+	ui.count.Text = strconv.Itoa(len(ui.store.Items))
+	ui.count.Refresh()
 	if len(ui.store.Items) == 0 {
 		ui.rows.Add(emptyState())
 	}
@@ -118,6 +129,7 @@ func (ui *app) row(sc store.Shortcut) fyne.CanvasObject {
 	}
 
 	actions := container.NewHBox(chips...)
+	actions.Add(iconButton(theme.MediaPlayIcon(), func() { ui.launch(sc) }))
 	actions.Add(iconButton(theme.FolderOpenIcon(), func() {
 		if err := exec.Command("xdg-open", filepath.Dir(sc.DesktopPath)).Start(); err != nil {
 			dialog.ShowError(err, ui.win)

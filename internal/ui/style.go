@@ -62,11 +62,24 @@ func card(content fyne.CanvasObject) fyne.CanvasObject {
 
 // chip adalah label kecil dengan latar berwarna.
 func chip(text string, bg fyne.ThemeColorName) fyne.CanvasObject {
+	object, _ := chipLabel(text, bg)
+	return object
+}
+
+// chipLabel mengembalikan chip sekaligus teksnya supaya bisa diperbarui.
+func chipLabel(text string, bg fyne.ThemeColorName) (fyne.CanvasObject, *canvas.Text) {
 	rect := canvas.NewRectangle(theme.Color(bg))
 	rect.CornerRadius = 7
 	label := textLine(text, 11, true, theme.ColorNameForeground)
 	label.Alignment = fyne.TextAlignCenter
-	return container.NewStack(rect, container.NewPadded(label))
+	return container.NewStack(rect, container.NewPadded(label)), label
+}
+
+// accentBar adalah garis gradien brand di bawah header.
+func accentBar() fyne.CanvasObject {
+	bar := canvas.NewLinearGradient(brandIndigo, brandCyan, 90)
+	bar.SetMinSize(fyne.NewSize(0, 3))
+	return bar
 }
 
 // iconButton adalah tombol ikon tanpa label, gaya datar.

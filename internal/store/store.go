@@ -27,6 +27,7 @@ type Shortcut struct {
 	Type            string    `json:"type"`
 	URL             string    `json:"url,omitempty"`
 	Browser         string    `json:"browser,omitempty"`
+	ExecArgs        []string  `json:"exec_args,omitempty"`
 	BinaryPath      string    `json:"binary_path,omitempty"`
 	IconPath        string    `json:"icon_path,omitempty"`
 	DesktopPath     string    `json:"desktop_path"`
