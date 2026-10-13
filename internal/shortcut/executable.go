@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -65,9 +66,20 @@ func InstallExecutable(o ExecOptions) (store.Shortcut, error) {
 		return sc, err
 	}
 
+	// jenis aplikasi dideteksi otomatis; .exe Windows dijalankan lewat wine
+	kind := DetectKind(o.BinaryPath)
+	execArgs := []string{binDst}
+	if kind == KindWindows {
+		wine, err := exec.LookPath("wine")
+		if err != nil {
+			return sc, errors.New("this is a Windows .exe; install wine first so the shortcut can run it")
+		}
+		execArgs = []string{wine, binDst}
+	}
+
 	entry := Entry{
 		Name:       name,
-		ExecArgs:   []string{binDst},
+		ExecArgs:   execArgs,
 		Icon:       iconPath,
 		Categories: category(o.Category, "Utility;"),
 		NoDisplay:  !o.Menu,
@@ -80,6 +92,7 @@ func InstallExecutable(o ExecOptions) (store.Shortcut, error) {
 		Slug:        sl,
 		Name:        name,
 		Type:        store.TypeExecutable,
+		Kind:        kind,
 		ExecArgs:    entry.ExecArgs,
 		BinaryPath:  binDst,
 		IconPath:    iconPath,
@@ -174,6 +187,7 @@ func InstallWebApp(o WebOptions) (store.Shortcut, error) {
 		Slug:        sl,
 		Name:        name,
 		Type:        store.TypeWebApp,
+		Kind:        KindPWA,
 		URL:         pageURL,
 		Browser:     strings.Join(o.Browser.Exec, " "),
 		ExecArgs:    entry.ExecArgs,

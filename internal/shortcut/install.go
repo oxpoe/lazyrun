@@ -46,10 +46,12 @@ func checkRunnable(path string) error {
 	head := make([]byte, 4)
 	n, _ := io.ReadFull(f, head)
 	head = head[:n]
-	if bytes.HasPrefix(head, []byte{0x7f, 'E', 'L', 'F'}) || bytes.HasPrefix(head, []byte("#!")) {
+	if bytes.HasPrefix(head, []byte{0x7f, 'E', 'L', 'F'}) ||
+		bytes.HasPrefix(head, []byte("#!")) ||
+		bytes.HasPrefix(head, []byte("MZ")) { // .exe Windows (dijalankan lewat wine)
 		return nil
 	}
-	return errors.New("not an executable binary (ELF, AppImage, or script only)")
+	return errors.New("not an executable (ELF, AppImage, script, or Windows .exe)")
 }
 
 // copyFile menyalin src ke dst lewat file sementara supaya dst tidak pernah setengah tertulis.

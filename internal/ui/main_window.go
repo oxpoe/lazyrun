@@ -129,7 +129,8 @@ func (ui *app) row(sc store.Shortcut) *hoverCard {
 		caption(metaText(sc)),
 	)
 
-	chips := make([]fyne.CanvasObject, 0, 3)
+	chips := make([]fyne.CanvasObject, 0, 4)
+	chips = append(chips, chip(kindLabel(sc), colorNameChipKind))
 	if sc.Targets.Menu {
 		chips = append(chips, chip(T("chip_menu"), colorNameChipMenu))
 	}
@@ -157,18 +158,44 @@ func (ui *app) row(sc store.Shortcut) *hoverCard {
 		actions))
 }
 
-// metaText menampilkan tipe shortcut dan penanda singkatnya.
+// kindLabel adalah label jenis aplikasi hasil auto-detect.
+// Istilahnya teknis (nama teknologi), jadi tidak diterjemahkan.
+func kindLabel(sc store.Shortcut) string {
+	switch sc.Kind {
+	case shortcut.KindGo:
+		return "Go"
+	case shortcut.KindAppImage:
+		return "AppImage"
+	case shortcut.KindElectron:
+		return "Electron"
+	case shortcut.KindScript:
+		return "Script"
+	case shortcut.KindWindows:
+		return "Windows"
+	case shortcut.KindBinary:
+		return "Binary"
+	case shortcut.KindPWA:
+		return "PWA"
+	}
+	// shortcut lama (sebelum ada auto-detect)
+	if sc.Type == store.TypeWebApp {
+		return "PWA"
+	}
+	return "Executable"
+}
+
+// metaText menampilkan penanda singkat: nama berkas binary atau host web app.
 func metaText(sc store.Shortcut) string {
 	if sc.Type == store.TypeWebApp {
 		if host := hostOf(sc.URL); host != "" {
-			return "Web · " + host
+			return host
 		}
-		return "Web"
+		return sc.URL
 	}
 	if sc.BinaryPath != "" {
-		return "Executable · " + filepath.Base(sc.BinaryPath)
+		return filepath.Base(sc.BinaryPath)
 	}
-	return "Executable"
+	return sc.Name
 }
 
 func fallbackIcon(sc store.Shortcut) fyne.Resource {

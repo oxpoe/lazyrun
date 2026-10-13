@@ -44,7 +44,7 @@ func (ui *app) showExecutableDialog() {
 	browseBin := widget.NewButtonWithIcon(T("browse"), theme.FolderOpenIcon(), func() {
 		pickFile(ui.win, nil, func(path string) {
 			binPath = path
-			binLabel.SetText(filepath.Base(path))
+			binLabel.SetText(filepath.Base(path) + " · " + detectedKind(path))
 			if strings.TrimSpace(nameEntry.Text) == "" {
 				nameEntry.SetText(appNameFromFile(path))
 			}
@@ -134,6 +134,15 @@ func pickFile(win fyne.Window, filter storage.FileFilter, onPick func(path strin
 		fd.SetFilter(filter)
 	}
 	fd.Show()
+}
+
+// detectedKind menampilkan hasil auto-detect jenis berkas di dialog.
+func detectedKind(path string) string {
+	kind := shortcut.DetectKind(path)
+	if kind == "" {
+		return T("kind_unknown")
+	}
+	return kind
 }
 
 func appNameFromFile(path string) string {

@@ -18,6 +18,7 @@ var tr = map[string][2]string{
 	"chip_desktop":      {"Desktop", "Desktop"},
 	"chip_broken":       {"file missing", "file hilang"},
 	"none":              {"not selected", "belum dipilih"},
+	"kind_unknown":      {"unknown type", "jenis tidak dikenal"},
 	"icon_auto":         {"automatic", "otomatis"},
 	"online":            {"Online", "Online"},
 	"search":            {"Search", "Cari"},

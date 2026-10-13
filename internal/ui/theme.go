@@ -21,6 +21,7 @@ const (
 	colorNameChipMenu   fyne.ThemeColorName = "lazyrunChipMenu"
 	colorNameChipDesk   fyne.ThemeColorName = "lazyrunChipDesktop"
 	colorNameChipBroken fyne.ThemeColorName = "lazyrunChipBroken"
+	colorNameChipKind   fyne.ThemeColorName = "lazyrunChipKind"
 )
 
 // brand menimpa sebagian warna/ukuran tema bawaan; terang/gelap tetap ikut sistem.
@@ -51,6 +52,8 @@ func (b brand) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.
 		return withAlpha(brandIndigo, pick[uint8](dark, 0x44, 0x26))
 	case colorNameChipDesk:
 		return withAlpha(brandCyan, pick[uint8](dark, 0x3D, 0x2C))
+	case colorNameChipKind:
+		return pick(dark, color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0x1C}, color.NRGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x12})
 	case colorNameChipBroken:
 		return withAlpha(color.NRGBA{R: 0xE0, G: 0x4F, B: 0x4F, A: 0xFF}, pick[uint8](dark, 0x4A, 0x2E))
 	}

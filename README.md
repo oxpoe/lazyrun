@@ -20,8 +20,11 @@ AppImage, no terminal needed.
 - **Repo:** <https://github.com/oxpoe/lazyrun>
 - **Donate:** <https://donasi.oxpoe.qzz.io/>
 
-- **Executable shortcut** — picks an ELF/AppImage/script, copies it to
+- **Executable shortcut** — picks an ELF/AppImage/script/Windows `.exe`, copies it to
   `~/.local/bin/`, installs the icon, writes the `.desktop` entry.
+- **Automatic type label** — every shortcut is tagged with what it actually is,
+  detected from the file: `Go`, `AppImage`, `Electron`, `Script`, `Windows`, `Binary`
+  (`.exe` files are launched through `wine`), or `PWA` for web apps.
 - **Web app shortcut** — opens the URL as an app: `--app=<url>` for
   Chromium-based browsers (Chrome, Chromium, Brave, Edge, Vivaldi, Helium,
   including Flatpak builds), `--new-window` for Firefox.

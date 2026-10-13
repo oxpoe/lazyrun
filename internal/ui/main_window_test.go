@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2/test"
 
+	"lazyrun/internal/shortcut"
 	"lazyrun/internal/store"
 )
 
@@ -28,11 +29,37 @@ func TestBuildMainWindow(t *testing.T) {
 
 func TestMetaText(t *testing.T) {
 	sc := store.Shortcut{Type: store.TypeWebApp, URL: "https://example.com/x", Targets: store.Targets{Menu: true}}
-	if got := metaText(sc); got != "Web · example.com" {
+	if got := metaText(sc); got != "example.com" {
 		t.Errorf("metaText() = %q", got)
 	}
 	exe := store.Shortcut{Type: store.TypeExecutable, BinaryPath: "/home/u/.local/bin/winbox"}
-	if got := metaText(exe); got != "Executable · winbox" {
+	if got := metaText(exe); got != "winbox" {
 		t.Errorf("metaText() = %q", got)
+	}
+}
+
+func TestKindLabel(t *testing.T) {
+	cases := map[string]string{
+		shortcut.KindGo:       "Go",
+		shortcut.KindAppImage: "AppImage",
+		shortcut.KindElectron: "Electron",
+		shortcut.KindScript:   "Script",
+		shortcut.KindWindows:  "Windows",
+		shortcut.KindBinary:   "Binary",
+		shortcut.KindPWA:      "PWA",
+	}
+	for kind, want := range cases {
+		sc := store.Shortcut{Kind: kind, Type: store.TypeExecutable}
+		if got := kindLabel(sc); got != want {
+			t.Errorf("kindLabel(%q) = %q, mau %q", kind, got, want)
+		}
+	}
+
+	// data lama tanpa kind
+	if got := kindLabel(store.Shortcut{Type: store.TypeExecutable}); got != "Executable" {
+		t.Errorf("kindLabel(lama, executable) = %q", got)
+	}
+	if got := kindLabel(store.Shortcut{Type: store.TypeWebApp}); got != "PWA" {
+		t.Errorf("kindLabel(lama, webapp) = %q", got)
 	}
 }

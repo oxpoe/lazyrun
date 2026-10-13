@@ -25,6 +25,7 @@ type Shortcut struct {
 	Slug            string    `json:"slug"`
 	Name            string    `json:"name"`
 	Type            string    `json:"type"`
+	Kind            string    `json:"kind,omitempty"` // hasil auto-detect: go, appimage, electron, script, windows, binary, pwa
 	URL             string    `json:"url,omitempty"`
 	Browser         string    `json:"browser,omitempty"`
 	ExecArgs        []string  `json:"exec_args,omitempty"`
