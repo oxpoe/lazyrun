@@ -97,9 +97,9 @@ func (ui *app) markUpdatePending(rel update.Release) {
 
 // showUpdateDialog menawarkan update: unduh sekarang, buka halaman rilis, atau nanti.
 func (ui *app) showUpdateDialog(rel update.Release) {
-	notes := widget.NewLabel(rel.Notes)
-	notes.Wrapping = fyne.TextWrapWord
-	notes.Importance = widget.LowImportance
+	// catatan rilis GitHub berformat markdown; render supaya blok kode/daftar
+	// tidak tampil sebagai teks mentah
+	notes := widget.NewRichTextFromMarkdown(rel.Notes)
 
 	// catatan rilis di tengah (bukan top): VScroll di Fyne punya MinSize kecil,
 	// jadi kalau dipasang sebagai top dari Border isinya terpotong.
