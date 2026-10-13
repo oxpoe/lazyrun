@@ -12,12 +12,16 @@ AppImage, no terminal needed.
 - **Web app shortcut** — opens the URL as an app: `--app=<url>` for
   Chromium-based browsers (Chrome, Chromium, Brave, Edge, Vivaldi, Helium,
   including Flatpak builds), `--new-window` for Firefox.
-- **Icons** — three ways: pick a file, search an online icon library
-  ([Iconify](https://iconify.design), with the app name as the query), or let LazyRun
-  do it automatically: a nearby image file, the site's favicon (including high
-  resolution icons from the web app manifest), or a brand icon matched by name.
-  Every downloaded icon remembers its source, so the *sync icon* button in the list
-  can fetch it again later.
+- **Icons** — pick a file, or search in the *Icon from the internet* dialog:
+  - **app name** (`whatsapp`) → search of the [Iconify](https://iconify.design) icon library;
+  - **website** (`mikrotik.com`) → the site's own icons: web app manifest (up to
+    512 px), apple-touch-icon, favicon, plus a favicon service. Best option for apps
+    that have no icon in icon libraries (e.g. Winbox → `mikrotik.com`);
+  - **image URL** (`https://…/icon.png`) → that image directly.
+  Installation also tries automatically: a nearby image file, the site's icons, then a
+  brand icon matched by name. Every icon is converted to PNG (SVG, webp, gif, bmp,
+  ico and jpeg included) at up to 512 px, and remembers its source so the *sync icon*
+  button in the list can fetch it again later.
 - **Shortcut location** — checkbox for *Application menu* and/or *Desktop*,
   at least one is required. Desktop-only entries are written with
   `NoDisplay=true` so they do not show up in the menu.
@@ -56,7 +60,7 @@ Keep it wherever you like (for example `~/.local/bin/`). Automatic updates need
 | Purpose | Path |
 |---|---|
 | Copied binary | `~/.local/bin/<name>` |
-| Icon | `~/.local/share/icons/hicolor/512x512/apps/<name>.png` |
+| Icon (always PNG) | `~/.local/share/icons/hicolor/512x512/apps/<name>.png` |
 | Menu entry (source of truth) | `~/.local/share/applications/<name>.desktop` |
 | Desktop copy | `~/Desktop/<name>.desktop` (from `xdg-user-dir DESKTOP`) |
 | LazyRun metadata | `~/.config/lazyrun/shortcuts.json` |

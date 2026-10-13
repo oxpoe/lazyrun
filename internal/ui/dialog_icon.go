@@ -56,6 +56,7 @@ func (ui *app) showIconSearch(query string, onPick func(icon.Result, []byte)) {
 	entry.SetPlaceHolder("whatsapp")
 
 	status := muted(T("search_hint"))
+	entry.SetPlaceHolder("whatsapp / mikrotik.com")
 	grid := container.NewGridWithColumns(6)
 	results := container.NewVScroll(container.NewPadded(grid))
 	slots := make(chan struct{}, 3)
@@ -69,7 +70,7 @@ func (ui *app) showIconSearch(query string, onPick func(icon.Result, []byte)) {
 		status.SetText(T("searching"))
 		grid.RemoveAll()
 		go func() {
-			list, err := icon.SearchBest(entry.Text, 24)
+			list, err := lookupIcons(entry.Text)
 			fyne.Do(func() {
 				if err != nil {
 					status.SetText(T("search_failed"))
@@ -100,6 +101,22 @@ func (ui *app) showIconSearch(query string, onPick func(icon.Result, []byte)) {
 	d = dialog.NewCustomWithoutButtons(T("icon_search_title"), content, ui.win)
 	showDialog(d, ui.win, 560, 470) // sekaligus menampilkan dialog
 	search()
+}
+
+// lookupIcons memilih sumber sesuai yang diketik user:
+// URL gambar → dipakai langsung, domain situs → ikon resmi situs itu,
+// selain itu → pencarian nama di Iconify.
+func lookupIcons(query string) ([]icon.Result, error) {
+	query = strings.TrimSpace(query)
+	if icon.IsImageURL(query) {
+		return []icon.Result{{Name: "URL ikon", URL: query}}, nil
+	}
+	if domain := icon.Domain(query); domain != "" {
+		if list, err := icon.SiteIcons(domain); err == nil && len(list) > 0 {
+			return list, nil
+		}
+	}
+	return icon.SearchBest(query, 24)
 }
 
 // iconChoice adalah satu ikon hasil pencarian. Gambarnya diunduh di latar belakang

@@ -161,7 +161,9 @@ func queryVariants(query string) []string {
 	return out
 }
 
-// FromURL mengunduh ikon dari URL dan menebak ekstensinya dari isi file.
+// FromURL mengunduh ikon dari URL. Hasilnya selalu PNG: format apa pun
+// (svg, webp, gif, ico, jpeg) dikonversi dulu supaya desktop environment
+// tidak perlu mendukung banyak format.
 func FromURL(rawURL string) ([]byte, string, error) {
 	data, err := get(rawURL)
 	if err != nil {
@@ -172,11 +174,65 @@ func FromURL(rawURL string) ([]byte, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	ext := sniffExt(data)
-	if ext == "" {
-		return nil, "", fmt.Errorf("unsupported icon format at %s", rawURL)
+	converted, err := ToPNG(data)
+	if err != nil {
+		return nil, "", fmt.Errorf("%s: %w", rawURL, err)
 	}
-	return data, ext, nil
+	return converted, ".png", nil
+}
+
+// imageExts adalah ekstensi gambar yang bisa dipakai langsung sebagai ikon.
+var imageExts = []string{".png", ".svg", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".ico", ".xpm"}
+
+// IsImageURL benar kalau teks yang diketik user berupa URL gambar.
+func IsImageURL(text string) bool {
+	text = strings.TrimSpace(text)
+	if !strings.Contains(text, "://") {
+		return false
+	}
+	lower := strings.ToLower(text)
+	for _, ext := range imageExts {
+		if strings.HasSuffix(strings.SplitN(lower, "?", 2)[0], ext) {
+			return true
+		}
+	}
+	return false
+}
+
+// Domain mengembalikan domain kalau user mengetik alamat situs (mis. "mikrotik.com"),
+// bukan nama aplikasi biasa.
+func Domain(text string) string {
+	text = strings.TrimSpace(text)
+	if text == "" || strings.ContainsAny(text, " \t") || IsImageURL(text) {
+		return ""
+	}
+	// nama file gambar (mis. "lazyrun.png") bukan domain
+	lower := strings.ToLower(strings.SplitN(text, "?", 2)[0])
+	for _, ext := range imageExts {
+		if strings.HasSuffix(lower, ext) {
+			return ""
+		}
+	}
+	host := text
+	if strings.Contains(text, "://") {
+		if u, err := url.Parse(text); err == nil {
+			host = u.Hostname()
+		}
+	}
+	parts := strings.Split(strings.Trim(host, "."), ".")
+	if len(parts) < 2 {
+		return ""
+	}
+	tld := parts[len(parts)-1]
+	if len(tld) < 2 || len(tld) > 24 {
+		return ""
+	}
+	for _, r := range strings.Join(parts, "") {
+		if !(r == '-' || r == '.' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9') {
+			return ""
+		}
+	}
+	return host
 }
 
 // slug menyamakan nama untuk perbandingan (huruf kecil, tanpa pemisah).

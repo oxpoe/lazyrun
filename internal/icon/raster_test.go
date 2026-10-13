@@ -2,6 +2,7 @@ package icon
 
 import (
 	"bytes"
+	"encoding/binary"
 	"image/png"
 	"testing"
 )
@@ -78,5 +79,69 @@ func TestRasterizeColorsCurrentColorIcons(t *testing.T) {
 	// brand indigo #4F46E5: biru > merah > hijau
 	if !(b > r && r > g) {
 		t.Errorf("warna pengganti bukan brand indigo: r=%d g=%d b=%d", r>>8, g>>8, b>>8)
+	}
+}
+
+// ico32bpp membuat ICO berisi gambar BMP 32-bit (format favicon lama).
+func ico32bpp(width int, pixel func(x, y int) (byte, byte, byte, byte)) []byte {
+	stride := (width*4 + 3) & ^3
+	dib := make([]byte, 40+stride*width)
+	binary.LittleEndian.PutUint32(dib[0:], 40)
+	binary.LittleEndian.PutUint32(dib[4:], uint32(width))
+	binary.LittleEndian.PutUint32(dib[8:], uint32(width*2)) // XOR + AND
+	binary.LittleEndian.PutUint16(dib[12:], 1)
+	binary.LittleEndian.PutUint16(dib[14:], 32)
+
+	for y := 0; y < width; y++ {
+		row := dib[40+(width-1-y)*stride:]
+		for x := 0; x < width; x++ {
+			b, g, r, a := pixel(x, y)
+			row[x*4], row[x*4+1], row[x*4+2], row[x*4+3] = b, g, r, a
+		}
+	}
+
+	ico := make([]byte, 22+len(dib))
+	ico[2], ico[3] = 1, 0
+	ico[4], ico[5] = 1, 0
+	put32 := func(off, v int) {
+		binary.LittleEndian.PutUint32(ico[off:], uint32(v))
+	}
+	ico[6] = byte(width) // lebar (0 = 256)
+	ico[7] = byte(width)
+	put32(14, len(dib))
+	put32(18, 22)
+	copy(ico[22:], dib)
+	return ico
+}
+
+func TestToPNGConvertsBMPIcon(t *testing.T) {
+	ico := ico32bpp(16, func(x, y int) (byte, byte, byte, byte) {
+		return 0x20, 0x80, 0xE0, 0xFF // BGR + alpha
+	})
+
+	out, err := ToPNG(ico)
+	if err != nil {
+		t.Fatalf("ico BMP harus bisa dikonversi: %v", err)
+	}
+	img, err := png.Decode(bytes.NewReader(out))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, g, b, a := img.At(8, 8).RGBA()
+	if a == 0 {
+		t.Fatal("piksel ICO BMP transparan, seharusnya opaque")
+	}
+	// warna BGR 0x20,0x80,0xE0 = RGB (0xE0,0x80,0x20)
+	if r>>8 != 0xE0 || g>>8 != 0x80 || b>>8 != 0x20 {
+		t.Errorf("warna salah: r=%#x g=%#x b=%#x", r>>8, g>>8, b>>8)
+	}
+}
+
+func TestDecodeICORejectsGarbage(t *testing.T) {
+	if _, err := decodeICO([]byte("bukan ico")); err == nil {
+		t.Error("data bukan ICO harus error")
+	}
+	if _, err := decodeICO(icoWithPNG([]byte("bukan png"))); err == nil {
+		t.Error("entry PNG rusak harus error")
 	}
 }

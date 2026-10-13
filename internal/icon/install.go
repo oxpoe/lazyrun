@@ -86,9 +86,9 @@ func ToPNG(data []byte) ([]byte, error) {
 		return encodePNG(img)
 	}
 
-	// ico bisa berisi PNG langsung
-	if png := largestPNGFromICO(data); png != nil {
-		return png, nil
+	// ico: bisa berisi PNG langsung atau gambar BMP di dalamnya
+	if img, err := decodeICO(data); err == nil {
+		return encodePNG(img)
 	}
 	return nil, errors.New("format ikon tidak didukung")
 }

@@ -36,18 +36,17 @@ func Fetch(pageURL string) ([]byte, string, error) {
 
 	var lastErr error
 	for _, candidate := range iconCandidates(base) {
-		data, err := get(candidate)
+		data, err := get(candidate.url)
 		if err != nil {
 			lastErr = err
 			continue
 		}
-		if ext := sniffExt(data); ext != "" {
-			return data, ext, nil
+		converted, err := ToPNG(data)
+		if err != nil {
+			lastErr = fmt.Errorf("%s: %w", candidate.url, err)
+			continue
 		}
-		if png := largestPNGFromICO(data); png != nil {
-			return png, ".png", nil
-		}
-		lastErr = errors.New("unsupported icon format at " + candidate)
+		return converted, ".png", nil
 	}
 	if lastErr == nil {
 		lastErr = errors.New("no favicon found")
@@ -105,24 +104,86 @@ func manifestIcons(page *url.URL) []iconCandidate {
 		if err != nil {
 			continue
 		}
-		score := 0
+		score, label := 0, "manifest"
+		if entry.Sizes != "" {
+			label = "manifest " + entry.Sizes
+		}
 		if size := attr(sizeAttr, `sizes="`+entry.Sizes+`"`); size != "" {
 			fmt.Sscanf(size, "%d", &score)
 		}
-		candidates = append(candidates, iconCandidate{base.ResolveReference(ref).String(), score})
+		candidates = append(candidates, iconCandidate{url: base.ResolveReference(ref).String(), label: label, score: score})
 	}
 	sort.SliceStable(candidates, func(i, j int) bool { return candidates[i].score > candidates[j].score })
 	return candidates
 }
 
+// SiteIcons mengembalikan semua ikon yang ditawarkan sebuah situs (manifest,
+// apple-touch-icon, favicon) plus versi dari layanan favicon.
+// Dipakai untuk memasang ikon aplikasi dari domain resminya.
+func SiteIcons(pageURL string) ([]Result, error) {
+	base, err := normalizePageURL(pageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	var out []Result
+	seen := map[string]bool{}
+	add := func(c iconCandidate) {
+		if c.url == "" || seen[c.url] {
+			return
+		}
+		seen[c.url] = true
+		out = append(out, Result{Name: c.label, URL: c.url})
+	}
+	for _, c := range iconCandidates(base) {
+		add(c)
+	}
+	if base.Hostname() != "" {
+		add(faviconService(base.Hostname()))
+	}
+	if len(out) == 0 {
+		return nil, errors.New("situs ini tidak menyediakan ikon")
+	}
+	return out, nil
+}
+
+// faviconService memakai layanan favicon Google sebagai pilihan tambahan.
+func faviconService(domain string) iconCandidate {
+	return iconCandidate{
+		url:   fmt.Sprintf("https://www.google.com/s2/favicons?domain=%s&sz=128", url.QueryEscape(domain)),
+		label: "google " + domain,
+		score: 5,
+	}
+}
+
+// normalizePageURL menambah skema https kalau user menulis domain saja.
+func normalizePageURL(raw string) (*url.URL, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, errors.New("alamat kosong")
+	}
+	if !strings.Contains(raw, "://") {
+		raw = "https://" + raw
+	}
+	base, err := url.Parse(raw)
+	if err != nil {
+		return nil, err
+	}
+	if base.Host == "" {
+		return nil, errors.New("domain tidak valid: " + raw)
+	}
+	return base, nil
+}
+
 // iconCandidate adalah kandidat URL ikon dengan skor prioritas.
 type iconCandidate struct {
 	url   string
+	label string // keterangan untuk ditampilkan di UI (mis. "manifest 512x512")
 	score int
 }
 
 // iconCandidates mengumpulkan URL ikon dari HTML, ikon besar didahulukan, favicon.ico terakhir.
-func iconCandidates(base *url.URL) []string {
+func iconCandidates(base *url.URL) []iconCandidate {
 	var found []iconCandidate
 
 	if page, err := get(base.String()); err == nil {
@@ -147,24 +208,28 @@ func iconCandidates(base *url.URL) []string {
 				fmt.Sscanf(size, "%d", &score)
 				score += 10
 			}
-			found = append(found, iconCandidate{base.ResolveReference(ref).String(), score})
+			label := rel
+			if size := attr(sizeAttr, tag); size != "" {
+				label += " " + size
+			}
+			found = append(found, iconCandidate{url: base.ResolveReference(ref).String(), label: label, score: score})
 		}
 	}
 
 	sort.SliceStable(found, func(i, j int) bool { return found[i].score > found[j].score })
 	found = append(manifestIcons(base), found...)
 
-	out := make([]string, 0, len(found)+1)
+	out := make([]iconCandidate, 0, len(found)+1)
 	seen := map[string]bool{}
 	for _, c := range found {
 		if !seen[c.url] {
 			seen[c.url] = true
-			out = append(out, c.url)
+			out = append(out, c)
 		}
 	}
 	fallback := base.ResolveReference(&url.URL{Path: "/favicon.ico"}).String()
 	if !seen[fallback] {
-		out = append(out, fallback)
+		out = append(out, iconCandidate{url: fallback, label: "favicon.ico"})
 	}
 	return out
 }

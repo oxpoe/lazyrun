@@ -1,6 +1,10 @@
 package icon
 
 import (
+	"bytes"
+	"image"
+	"image/color"
+	"image/png"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +27,17 @@ func icoWithPNG(png []byte) []byte {
 	return ico
 }
 
-var pngBytes = append([]byte("\x89PNG\r\n\x1a\n"), []byte("payload")...)
+// pngBytes adalah PNG asli (kecil) untuk tes: ICO yang berisi PNG harus benar-benar
+// bisa di-decode, bukan sekadar punya magic bytes.
+var pngBytes = func() []byte {
+	img := image.NewNRGBA(image.Rect(0, 0, 8, 8))
+	img.Set(4, 4, color.NRGBA{R: 0x20, G: 0x80, B: 0xE0, A: 0xFF})
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
+}()
 
 func TestFetchUsesLinkedIcon(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

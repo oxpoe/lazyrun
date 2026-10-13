@@ -1,6 +1,7 @@
 package icon
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -119,17 +120,94 @@ func TestFindPicksMatchingName(t *testing.T) {
 	}
 }
 
-func TestFromURLSniffsFormat(t *testing.T) {
+func TestFromURLAlwaysReturnsPNG(t *testing.T) {
 	srv := fakeIconify(t)
 	data, ext, err := FromURL(srv.URL + "/logos/whatsapp-icon.svg")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ext != ".svg" || len(data) == 0 {
+	// SVG dari internet dikonversi ke PNG supaya seragam
+	if ext != ".png" || len(data) == 0 {
 		t.Errorf("FromURL = ext %q, %d byte", ext, len(data))
+	}
+	if !bytes.HasPrefix(data, pngMagic) {
+		t.Errorf("hasil FromURL bukan PNG: %q", data[:min(8, len(data))])
 	}
 
 	if _, _, err := FromURL(srv.URL + "/tidak-ada"); err == nil {
 		t.Error("URL 404 harus error")
+	}
+}
+
+func TestIsImageURLAndDomain(t *testing.T) {
+	images := []string{"https://contoh.com/ikon.png", "http://a.b/logo.svg", "https://x.id/i.JPEG?v=2"}
+	for _, u := range images {
+		if !IsImageURL(u) {
+			t.Errorf("IsImageURL(%q) = false", u)
+		}
+	}
+	if IsImageURL("https://contoh.com") || IsImageURL("winbox") {
+		t.Error("URL halaman/nama biasa bukan gambar")
+	}
+
+	domains := map[string]string{
+		"mikrotik.com":            "mikrotik.com",
+		"  web.whatsapp.com  ":    "web.whatsapp.com",
+		"https://mikrotik.com/":   "mikrotik.com",
+		"winbox":                  "",
+		"WhatsApp Web":            "",
+		"my-app v1.2":             "",
+		"lazyrun.png":             "",
+		"file:///home/x/icon.png": "",
+	}
+	for in, want := range domains {
+		if got := Domain(in); got != want {
+			t.Errorf("Domain(%q) = %q, mau %q", in, got, want)
+		}
+	}
+}
+
+func TestSiteIconsListsSiteAndService(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			_, _ = w.Write([]byte(`<html><head>` +
+				`<link rel="manifest" href="/manifest.json">` +
+				`<link rel="apple-touch-icon" sizes="180x180" href="/touch.png">` +
+				`<link rel="shortcut icon" href="/favicon.ico">` +
+				`</head></html>`))
+		case "/manifest.json":
+			_, _ = w.Write([]byte(`{"icons":[{"src":"/big-192.png","sizes":"192x192"},{"src":"/big-512.png","sizes":"512x512"}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	list, err := SiteIcons(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) < 3 {
+		t.Fatalf("ikon situs = %d, mau minimal 3: %+v", len(list), list)
+	}
+	// ikon manifest terbesar harus di depan, lalu ikon halaman, lalu layanan favicon
+	if list[0].URL != srv.URL+"/big-512.png" {
+		t.Errorf("kandidat pertama = %+s", list[0])
+	}
+	found := false
+	for _, r := range list {
+		if strings.HasPrefix(r.URL, "https://www.google.com/s2/favicons") {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("layanan favicon tidak disertakan sebagai pilihan")
+	}
+}
+
+func TestSiteIconsNeedsValidDomain(t *testing.T) {
+	if _, err := SiteIcons(""); err == nil {
+		t.Error("alamat kosong harus error")
 	}
 }
