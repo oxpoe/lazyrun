@@ -128,7 +128,7 @@ start (only when running as an AppImage) and offers to install it:
 
 *Check for Updates* in the footer runs the same flow manually.
 
-**Publishing a release** is just a tag — GitHub Actions builds and uploads
+**Publishing a release** is just a tag — Gitea Actions builds and uploads
 everything (`.github/workflows/release.yml`):
 
 ```bash

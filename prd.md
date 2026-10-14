@@ -127,7 +127,7 @@ Setiap kali membuat shortcut, pengguna memilih lokasi via **checkbox** yang flek
 
 - Bundle AppImage dengan dukungan **zsync**.
 - Menu **"Check for Updates"** memanggil `AppImageUpdate`.
-- Update otomatis dari GitHub Releases.
+- Update otomatis dari Gitea Releases.
 
 ---
 

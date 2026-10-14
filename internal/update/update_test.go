@@ -46,7 +46,7 @@ func TestNewerIgnoresSameAndOlder(t *testing.T) {
 func TestLatestParsesRelease(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("User-Agent") == "" {
-			t.Error("GitHub butuh header User-Agent")
+			t.Error("Gitea butuh header User-Agent")
 		}
 		_, _ = w.Write([]byte(`{
 			"tag_name": "v1.2.0",

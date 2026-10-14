@@ -57,7 +57,7 @@ func (ui *app) scheduleUpdateCheck() {
 	}()
 }
 
-// checkForUpdate mengambil rilis terbaru dari GitHub. manual=false hanya
+// checkForUpdate mengambil rilis terbaru dari Gitea. manual=false hanya
 // memberitahu kalau memang ada versi baru.
 func (ui *app) checkForUpdate(manual bool) {
 	if ui.version == "" || ui.version == "dev" {
@@ -97,7 +97,7 @@ func (ui *app) markUpdatePending(rel update.Release) {
 
 // showUpdateDialog menawarkan update: unduh sekarang, buka halaman rilis, atau nanti.
 func (ui *app) showUpdateDialog(rel update.Release) {
-	// catatan rilis GitHub berformat markdown; render supaya blok kode/daftar
+	// catatan rilis Gitea berformat markdown; render supaya blok kode/daftar
 	// tidak tampil sebagai teks mentah
 	notes := widget.NewRichTextFromMarkdown(rel.Notes)
 

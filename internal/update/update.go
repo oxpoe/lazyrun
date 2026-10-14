@@ -1,4 +1,4 @@
-// Package update memeriksa rilis terbaru LazyRun di GitHub dan memasangnya.
+// Package update memeriksa rilis terbaru LazyRun di Gitea dan memasangnya.
 package update
 
 import (
@@ -38,22 +38,22 @@ func RepoURL() string { return repoURL }
 type Release struct {
 	Tag      string // tag asli, mis. "v1.1.0"
 	Version  string // versi tanpa awalan v, mis. "1.1.0"
-	Notes    string // catatan rilis (markdown GitHub)
-	PageURL  string // halaman rilis di GitHub
+	Notes    string // catatan rilis (markdown Gitea)
+	PageURL  string // halaman rilis di Gitea
 	AppImage string // URL unduhan AppImage (kosong kalau tidak ada)
 	Zsync    string // URL berkas .zsync (opsional)
 }
 
 var client = &http.Client{Timeout: 20 * time.Second}
 
-// Latest mengambil rilis terbaru dari GitHub.
+// Latest mengambil rilis terbaru dari Gitea.
 func Latest() (Release, error) {
 	var rel Release
 	req, err := http.NewRequest(http.MethodGet, apiBase+"/latest", nil)
 	if err != nil {
 		return rel, err
 	}
-	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", "LazyRun")
 
 	resp, err := client.Do(req)
@@ -62,7 +62,7 @@ func Latest() (Release, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return rel, fmt.Errorf("GitHub menjawab %s", resp.Status)
+		return rel, fmt.Errorf("Gitea menjawab %s", resp.Status)
 	}
 
 	var payload struct {
