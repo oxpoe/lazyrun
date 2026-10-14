@@ -12,5 +12,5 @@ var version = "dev"
 
 func main() {
 	cursor.Apply() // sebelum app dibuat: GLFW membaca env cursor saat init
-	ui.Run(app.NewWithID("io.github.lazyrun.LazyRun"), version)
+	ui.Run(app.NewWithID("io.oxpoe.lazyrun.LazyRun"), version)
 }
