@@ -39,16 +39,21 @@ jobs:
           ls -lh dist/lazyrun-*.AppImage*
 
       - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: LazyRun ${{ github.ref_name }}
-          generate_release_notes: true
-          body: |
-            Single-file AppImage for Linux x86_64. No root needed, everything stays in
-            `~/.local/` and `~/.config/lazyrun/`.
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          API="${GITHUB_API_URL:-${GITHUB_SERVER_URL}/api/v1}"
+          TAG="${GITHUB_REF_NAME}"
+          cat > /tmp/body.md <<'EOF'
+          Single-file AppImage for Linux x86_64. No root needed, everything stays in
+          `~/.local/` and `~/.config/lazyrun/`.
 
-            Already using LazyRun? It checks this release page on startup and offers to
-            update itself (delta updates with `AppImageUpdate` when installed).
-          files: |
-            dist/lazyrun-*.AppImage
-            dist/lazyrun-*.AppImage.zsync
+          Already using LazyRun? It upgrades itself from this release page.
+          EOF
+          python3 -c 'import json,sys;print(json.dumps({"tag_name":sys.argv[1],"name":"LazyRun "+sys.argv[1],"body":open(sys.argv[2]).read()}))' "$TAG" /tmp/body.md > /tmp/rel.json
+          RID=$(curl -sf -X POST -H "Authorization: token $TOKEN" -H "Content-Type: application/json" "$API/repos/$GITHUB_REPOSITORY/releases" --data @/tmp/rel.json | python3 -c 'import json,sys;print(json.load(sys.stdin)["id"])')
+          echo "release id=$RID"
+          for f in dist/lazyrun-*.AppImage dist/lazyrun-*.AppImage.zsync; do
+            [ -f "$f" ] || continue
+            curl -sf -X POST -H "Authorization: token $TOKEN" -F "attachment=@$f" "$API/repos/$GITHUB_REPOSITORY/releases/$RID/assets?name=$(basename "$f")" -o /dev/null
+          done
