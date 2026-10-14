@@ -2,9 +2,9 @@
 
 # LazyRun — lazy shortcut build
 
-[![CI](https://github.com/oxpoe/lazyrun/actions/workflows/ci.yml/badge.svg)](https://github.com/oxpoe/lazyrun/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/oxpoe/lazyrun?label=release)](https://github.com/oxpoe/lazyrun/releases/latest)
-[![License](https://img.shields.io/github/license/oxpoe/lazyrun)](LICENSE)
+[![CI](https://gitea.oxpoe.qzz.io/oxpoe/lazyrun/actions/workflows/ci.yml/badge.svg)](https://gitea.oxpoe.qzz.io/oxpoe/lazyrun/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgitea.oxpoe.qzz.io%2Fapi%2Fv1%2Frepos%2Foxpoe%2Flazyrun%2Freleases%2Flatest&query=%24.tag_name&label=release&color=green&logo=gitea)](https://gitea.oxpoe.qzz.io/oxpoe/lazyrun/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue)
 ![UI](https://img.shields.io/badge/UI-Fyne%20%2F%20Go-00ADD8)
 
@@ -27,7 +27,7 @@ breathes while the app is open (the koala in `assets/logo.svg` is the mascot).*
   <img src="docs/main-light.png" width="49%" alt="LazyRun in light theme">
 </p>
 
-- **Repo:** <https://github.com/oxpoe/lazyrun>
+- **Repo:** <https://gitea.oxpoe.qzz.io/oxpoe/lazyrun>
 - **Donate:** <https://donasi.oxpoe.qzz.io/>
 
 - **Executable shortcut** — picks an ELF/AppImage/script/Windows `.exe`, copies it to
@@ -79,7 +79,7 @@ breathes while the app is open (the koala in `assets/logo.svg` is the mascot).*
 Needs a desktop Linux with the usual GL/X11 or Wayland libraries (any KDE Plasma or
 GNOME install has them). No root, nothing outside your home directory.
 
-Download the AppImage from [Releases](https://github.com/oxpoe/lazyrun/releases), then:
+Download the AppImage from [Releases](https://gitea.oxpoe.qzz.io/oxpoe/lazyrun/releases), then:
 
 ```bash
 chmod +x lazyrun-*-x86_64.AppImage
@@ -167,7 +167,7 @@ GH_USER=oxpoe GH_REPO=lazyrun ./build.sh
   Desktop copy, import/export, dark mode.
 - Firefox PWA via `--kiosk`, Flatpak/Snap targets, icon preview.
 
-Known limitations are tracked as [issues](https://github.com/oxpoe/lazyrun/issues);
+Known limitations are tracked as [issues](https://gitea.oxpoe.qzz.io/oxpoe/lazyrun/issues);
 the main ones:
 
 - the type label (`Go`, `Electron`, …) is detected when the shortcut is created, so a

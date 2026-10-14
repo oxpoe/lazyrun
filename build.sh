@@ -39,12 +39,8 @@ export ARCH
 export LINUXDEPLOY_OUTPUT_APP_NAME=lazyrun
 export LINUXDEPLOY_OUTPUT_VERSION="$VERSION"
 export LDAI_OUTPUT="$PWD/$OUT/lazyrun-$VERSION-$ARCH.AppImage"
-if [[ -n "${GH_USER:-}" && -n "${GH_REPO:-}" ]]; then
-	export LDAI_UPDATE_INFORMATION="gh-releases-zsync|$GH_USER|$GH_REPO|latest|lazyrun-*.AppImage.zsync"
-else
-	echo "==> catatan: GH_USER/GH_REPO kosong, AppImage tanpa update info zsync"
-	export LDAI_NO_APPSTREAM=1
-fi
+GITEA_BASE="${GITEA_BASE:-https://gitea.oxpoe.qzz.io/oxpoe/lazyrun}"
+export LDAI_UPDATE_INFORMATION="zsync|$GITEA_BASE/releases/download/v$VERSION/lazyrun-$VERSION-$ARCH.AppImage.zsync"
 
 # Library X11/Wayland/xkb/cursor tidak boleh ikut dibundel: kalau versinya beda
 # dengan host, cursor & rendering jadi tidak native (mis. cursor theme desktop tidak terpakai).

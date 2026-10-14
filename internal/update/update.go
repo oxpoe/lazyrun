@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	apiBase = "https://api.github.com/repos/oxpoe/lazyrun/releases"
-	repoURL = "https://github.com/oxpoe/lazyrun"
+	apiBase = "https://gitea.oxpoe.qzz.io/api/v1/repos/oxpoe/lazyrun/releases"
+	repoURL = "https://gitea.oxpoe.qzz.io/oxpoe/lazyrun"
 )
 
 // LAZYRUN_UPDATE_API bisa dipakai untuk mengarahkan cek update ke server lain

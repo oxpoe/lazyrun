@@ -32,35 +32,23 @@ jobs:
 
       - name: Build AppImage
         env:
-          # GH_USER/GH_REPO dipakai build.sh untuk menyisipkan info update zsync
-          # (gh-releases-zsync|<user>|<repo>|latest|lazyrun-*.AppImage.zsync)
-          GH_USER: ${{ github.repository_owner }}
-          GH_REPO: ${{ github.event.repository.name }}
+          # build.sh menyisipkan info update zsync yang mengarah ke rilis di Gitea.
+          GITEA_BASE: ${{ github.server_url }}/${{ github.repository }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}" ./build.sh
           ls -lh dist/lazyrun-*.AppImage*
 
       - name: Create release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          cat > /tmp/notes.md <<'NOTES'
-          Single-file AppImage for Linux x86_64. No root needed, everything stays in
-          `~/.local/` and `~/.config/lazyrun/`.
+        uses: softprops/action-gh-release@v2
+        with:
+          name: LazyRun ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            Single-file AppImage for Linux x86_64. No root needed, everything stays in
+            `~/.local/` and `~/.config/lazyrun/`.
 
-          ```bash
-          chmod +x lazyrun-*-x86_64.AppImage
-          ./lazyrun-*-x86_64.AppImage
-          ```
-
-          Already using LazyRun? It checks this release page on startup and offers to
-          update itself (delta updates with `AppImageUpdate` when installed).
-
-          ---
-          NOTES
-          gh release create "$GITHUB_REF_NAME" \
-            dist/lazyrun-*.AppImage \
-            dist/lazyrun-*.AppImage.zsync \
-            --title "LazyRun ${GITHUB_REF_NAME}" \
-            --notes-file /tmp/notes.md \
-            --generate-notes
+            Already using LazyRun? It checks this release page on startup and offers to
+            update itself (delta updates with `AppImageUpdate` when installed).
+          files: |
+            dist/lazyrun-*.AppImage
+            dist/lazyrun-*.AppImage.zsync

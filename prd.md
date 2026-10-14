@@ -336,7 +336,7 @@ ln -s usr/bin/lazyrun lazyrun.AppDir/AppRun
 
 # 3. Build AppImage dengan dukungan update
 ./appimagetool-x86_64.AppImage \
-  -u "gh-releases-zsync|user|lazyrun|latest|lazyrun-*.AppImage.zsync" \
+  -u "zsync|https://gitea.oxpoe.qzz.io/oxpoe/lazyrun/releases/download/<tag>/lazyrun-<ver>-x86_64.AppImage.zsync" \
   lazyrun.AppDir
 ```
 

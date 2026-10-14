@@ -68,7 +68,7 @@ var tr = map[string][2]string{
 	"need_target": {"Pick at least one location: menu or desktop.", "Pilih minimal satu lokasi: menu atau desktop."},
 	"no_browser":  {"No supported browser found. Install Chrome, Chromium, Brave, Edge, Vivaldi, or Firefox first.", "Browser yang didukung tidak ditemukan. Install Chrome, Chromium, Brave, Edge, Vivaldi, atau Firefox dulu."},
 
-	"github":        {"GitHub", "GitHub"},
+	"github":        {"Gitea", "Gitea"},
 	"donate":        {"Donate", "Donasi"},
 	"check_updates": {"Check for Updates", "Cek Update"},
 

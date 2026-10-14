@@ -12,9 +12,9 @@ import (
 	"lazyrun/internal/store"
 )
 
-// Link aplikasi: repo GitHub LazyRun dan halaman donasi.
+// Link aplikasi: repo Gitea LazyRun dan halaman donasi.
 const (
-	repoURL   = "https://github.com/oxpoe/lazyrun"
+	repoURL   = "https://gitea.oxpoe.qzz.io/oxpoe/lazyrun"
 	donateURL = "https://donasi.oxpoe.qzz.io/"
 )
 

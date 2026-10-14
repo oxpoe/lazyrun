@@ -51,7 +51,7 @@ func TestLatestParsesRelease(t *testing.T) {
 		_, _ = w.Write([]byte(`{
 			"tag_name": "v1.2.0",
 			"body": "  - ikon online\n  - animasi  ",
-			"html_url": "https://github.com/oxpoe/lazyrun/releases/tag/v1.2.0",
+			"html_url": "https://gitea.oxpoe.qzz.io/oxpoe/lazyrun/releases/tag/v1.2.0",
 			"assets": [
 				{"name": "lazyrun-1.2.0-x86_64.AppImage.zsync", "browser_download_url": "https://contoh/zsync"},
 				{"name": "lazyrun-1.2.0-x86_64.AppImage", "browser_download_url": "https://contoh/appimage"}
@@ -61,7 +61,7 @@ func TestLatestParsesRelease(t *testing.T) {
 	defer srv.Close()
 
 	SetEndpoint(srv.URL)
-	t.Cleanup(func() { SetEndpoint("https://api.github.com/repos/oxpoe/lazyrun/releases") })
+	t.Cleanup(func() { SetEndpoint("https://gitea.oxpoe.qzz.io/api/v1/repos/oxpoe/lazyrun/releases") })
 
 	rel, err := Latest()
 	if err != nil {
