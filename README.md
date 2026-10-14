@@ -1,3 +1,5 @@
+> 🪞 **Mirror.** Repo asli & pengembangan ada di **Gitea**: https://gitea.oxpoe.qzz.io/oxpoe/lazyrun
+
 # LazyRun — lazy shortcut build
 
 [![CI](https://github.com/oxpoe/lazyrun/actions/workflows/ci.yml/badge.svg)](https://github.com/oxpoe/lazyrun/actions/workflows/ci.yml)
